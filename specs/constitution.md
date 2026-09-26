@@ -65,7 +65,7 @@ escopo obrigatório.
 | Validação       | Pydantic v2                                             |
 | ORM             | SQLAlchemy 2.0 **assíncrono** (driver `aiosqlite`)      |
 | Migrações       | Alembic                                                 |
-| Banco           | SQLite (`backend/rocketlab.db`)                         |
+| Banco           | SQLite (`backend/moviestars.db`)                        |
 | Frontend        | Vite + React + TypeScript                               |
 | Testes backend  | pytest + pytest-asyncio + httpx                         |
 | Lint backend    | ruff (configuração do `pyproject.toml`)                 |
@@ -237,7 +237,7 @@ Uma feature só está concluída quando:
 - Todo endpoint novo tem ao menos um teste do caminho feliz e um do
   principal caso de erro (ex.: 404, 422).
 - Testes usam um banco isolado (SQLite em memória ou arquivo temporário),
-  nunca o `rocketlab.db` de desenvolvimento.
+  nunca o `moviestars.db` de desenvolvimento.
 - Testes seguem o padrão existente em `backend/tests/test_app.py`
   (`httpx.AsyncClient` com `ASGITransport`).
 
@@ -263,3 +263,4 @@ data e motivo, e specs afetadas são revisadas.
 | Data       | Alteração          | Motivo |
 |------------|--------------------|--------|
 | 2026-09-25 | Versão inicial     | —      |
+| 2026-09-26 | Banco renomeado de `rocketlab.db` para `moviestars.db` (seções 3 e 6) | Decisão do desenvolvedor: nome do projeto. Código e `.env.example` alinhados na feature 000. |

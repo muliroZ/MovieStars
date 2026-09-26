@@ -1,31 +1,36 @@
-# RocketLab 2026.2 — repositório base
+# MovieStars — Sistema de Avaliação de Filmes
 
-Base inicial para evoluir a atividade do RocketLab 2026.2. Ela preserva a organização do backend,
-o modelo relacional do catálogo de filmes em SQLAlchemy 2.0 e o histórico de
-migrações com Alembic, sem incluir interface, dados CSV, endpoints de negócio
-ou rotinas de carga.
+Módulo administrativo de um sistema de avaliação de filmes inspirado no
+Letterboxd, desenvolvido para a atividade do Rocket Lab 2026. O administrador
+navega pelo catálogo, busca filmes, vê detalhes e a média das avaliações,
+cadastra, edita e remove filmes e adiciona avaliações (1 a 5 estrelas).
 
-> **Nota:** `RocketLab` é apenas o nome de referência desta base. O diretório,
-> nome do pacote, título da API e arquivo do banco podem ser renomeados para o
-> que preferirem; eles não representam uma exigência da
-> estrutura-base.
+> Este é o README principal do projeto. O README original do repositório
+> base da atividade foi preservado em [`README-BASE.md`](README-BASE.md).
+
+## Stack
+
+- **Backend:** Python 3.11+, FastAPI, Pydantic v2, SQLAlchemy 2.0 assíncrono,
+  Alembic, SQLite.
+- **Frontend:** Vite, React, TypeScript.
+
+Detalhes e justificativas: [`specs/constitution.md`](specs/constitution.md).
 
 ## Estrutura
 
 ```text
 .
-├── backend/
-│   ├── app/
-│   │   ├── api/v1/        # ponto de composição dos futuros routers
-│   │   ├── core/          # configurações e logging
-│   │   ├── db/            # Base ORM, engine e sessões
-│   │   └── movies/        # modelos SQLAlchemy do domínio de filmes
-│   ├── migrations/        # ambiente e revisões Alembic
-│   └── tests/
-└── README.md
+├── backend/     # API FastAPI, modelos, migrações Alembic e testes
+├── frontend/    # aplicação Vite + React + TypeScript
+├── data/        # CSVs de carga inicial do catálogo
+├── specs/       # constituição do projeto e specs de cada feature
+├── README.md    # este arquivo
+└── README-BASE.md
 ```
 
-## Execução
+## Como executar
+
+### Backend
 
 Requer Python 3.11 ou superior.
 
@@ -34,39 +39,75 @@ cd backend
 python3 -m venv .venv
 .venv/bin/pip install -e ".[dev]"
 cp .env.example .env
-.venv/bin/alembic upgrade head
-.venv/bin/uvicorn app.main:app --reload
+.venv/bin/alembic upgrade head          # cria as tabelas
+# carga de dados: comando será documentado ao concluir a feature 000
+.venv/bin/uvicorn app.main:app --reload # API em http://localhost:8000/docs
 ```
 
-A API mínima ficará disponível em `http://localhost:8000`; use
-`http://localhost:8000/docs` para a documentação automática. O endpoint
-`GET /health` permite conferir se a aplicação iniciou corretamente.
-
-## Banco de dados e migrações
-
-O modelo usa um esquema estrela para o catálogo de filmes:
-
-- dimensões de filmes, gêneros, pessoas, produtoras e resumo de avaliações;
-- fato de desempenho financeiro e de engajamento;
-- tabelas de associação N:N entre filmes, gêneros, produtoras e pessoas;
-
-O schema corresponde aos nove arquivos CSV atuais da camada Diamond, com a
-adição de `movie_reviews`: uma avaliação individual por linha, na escala 0–10.
-A tabela aceita diretamente as colunas `sk_movie_review_id`, `sk_movie_id`,
-`nome`, `nota` e `comentario` do CSV enviado separadamente. `created_at` é
-gerado pelo banco. O contexto generativo não faz parte desta base.
-
-O repositório não inclui CSVs nem rotinas de carga. Para usar avaliações,
-importe primeiro os filmes em `dim_movies` e depois o CSV de `movie_reviews`.
-
-As tabelas são criadas exclusivamente pelo Alembic. Para evoluir os modelos,
-crie uma revisão e aplique-a:
+Testes e lint:
 
 ```bash
-cd backend
-.venv/bin/alembic revision --autogenerate -m "descreva a alteração"
-.venv/bin/alembic upgrade head
+.venv/bin/pytest
+.venv/bin/ruff check .
 ```
 
-O banco padrão é SQLite local em `backend/rocketlab.db`. Ajuste
-`DATABASE_URL` no arquivo `.env` para usar outro banco compatível.
+### Frontend
+
+```bash
+cd frontend
+bun install
+bun run dev     # http://localhost:5173
+```
+
+## Dados
+
+Os CSVs do catálogo estão versionados em `data/`:
+
+- `data/bases_atv_dev1/`: filmes, gêneros, pessoas, produtoras e resumo de
+  avaliações;
+- `data/bases_atv_dev_2/`: associações filme–gênero/pessoa/produtora,
+  métricas de desempenho e avaliações individuais.
+
+São cerca de 1,7 milhão de linhas no total. A rotina de carga é especificada
+em [`specs/features/000-carga-de-dados/spec.md`](specs/features/000-carga-de-dados/spec.md).
+
+## Processo de desenvolvimento
+
+O projeto segue Spec-Driven Development: cada feature vive em
+`specs/features/NNN-nome/` e passa por `spec.md` → `plan.md` → `tasks.md` →
+implementação, com revisão ao final de cada etapa.
+
+| Feature                   | Status          |
+|---------------------------|-----------------|
+| 000 — Carga de dados      | Spec aprovada   |
+| 001 — Catálogo e busca    | Não iniciada    |
+| 002 — Detalhes e média    | Não iniciada    |
+| 003 — Gerenciar filmes    | Não iniciada    |
+| 004 — Avaliações          | Não iniciada    |
+
+## Decisões
+
+### Domínio (valem para todo o projeto)
+
+Resumo; o texto completo está na seção 4 da
+[constituição](specs/constitution.md).
+
+- **Notas:** o banco guarda 0–10; a API e a interface usam 1–5 estrelas. A
+  conversão acontece só no backend.
+- **Média:** calculada na consulta a partir das avaliações individuais; a
+  tabela de resumo `dim_reviews` não é usada para exibir médias.
+- **Gênero e diretor:** vêm de tabelas de associação, não de colunas do filme.
+- **Exclusão de filme:** definitiva, removendo avaliações e vínculos.
+
+### Carga de dados (feature 000)
+
+- **Dados gravados como estão:** inconsistências dos CSVs (ex.: duração 0,
+  resumo de avaliações divergente) vão para o banco sem correção. Só é
+  descartado ou anulado o que o banco não aceita.
+- **Exceção, aspas nas sinopses:** 4.801 sinopses vêm com aspas de escape
+  duplicadas; a carga remove as aspas extras. 2.825 delas vêm cortadas na
+  origem e não há como recuperar o texto.
+- **Duração 0:** 10.160 filmes têm duração 0; a interface exibe "não
+  informada".
+- **Datas das avaliações importadas:** o CSV não tem data, então todas
+  recebem a data da carga.
