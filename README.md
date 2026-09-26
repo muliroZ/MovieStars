@@ -111,7 +111,7 @@ implementação, com revisão ao final de cada etapa.
 | Feature                   | Status          |
 |---------------------------|-----------------|
 | 000 — Carga de dados      | Concluída       |
-| 001 — Catálogo e busca    | Não iniciada    |
+| 001 — Catálogo e busca    | Plan aprovado   |
 | 002 — Detalhes e média    | Não iniciada    |
 | 003 — Gerenciar filmes    | Não iniciada    |
 | 004 — Avaliações          | Não iniciada    |
