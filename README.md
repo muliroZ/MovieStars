@@ -79,7 +79,7 @@ implementação, com revisão ao final de cada etapa.
 
 | Feature                   | Status          |
 |---------------------------|-----------------|
-| 000 — Carga de dados      | Spec aprovada   |
+| 000 — Carga de dados      | Plan aprovado   |
 | 001 — Catálogo e busca    | Não iniciada    |
 | 002 — Detalhes e média    | Não iniciada    |
 | 003 — Gerenciar filmes    | Não iniciada    |

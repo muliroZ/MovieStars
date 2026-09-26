@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     project_version: str = "2026.2"
     environment: str = "local"
     api_v1_prefix: str = "/api/v1"
-    database_url: str = "sqlite+aiosqlite:///./rocketlab.db"
+    database_url: str = "sqlite+aiosqlite:///./moviestars.db"
     backend_cors_origins: list[str] = ["http://localhost:5173"]
     log_level: str = "INFO"
 
