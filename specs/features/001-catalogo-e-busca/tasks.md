@@ -125,7 +125,7 @@ Quando uma task de frontend diz "build e lint passam", significa que
 
 ## Fase 2 — Base do frontend
 
-- [ ] **T-10. Dependência e configuração** (DEC-8, DEC-9)
+- [x] **T-10. Dependência e configuração** (DEC-8, DEC-9)
   - `bun add react-router-dom`.
   - `"strict": true` em `tsconfig.app.json`.
   - Criar `src/vite-env.d.ts` com o tipo de `VITE_API_URL`.
@@ -134,7 +134,7 @@ Quando uma task de frontend diz "build e lint passam", significa que
   - Verificação: build e lint passam; `package.json` lista
     `react-router-dom`.
 
-- [ ] **T-11. Tipos e cliente da API** (CA-22)
+- [x] **T-11. Tipos e cliente da API** (CA-22)
   - `src/types/movie.ts` (`MovieListItem`, `Page<T>`).
   - `src/api/client.ts` (`API_URL`, `apiGet`, `ApiError` com mensagem em
     português para falha de rede e para resposta de erro).
@@ -142,14 +142,14 @@ Quando uma task de frontend diz "build e lint passam", significa que
   - Verificação: build e lint passam; nenhum `any` no código
     (`grep -rn "any" src` não encontra tipos `any`).
 
-- [ ] **T-12. Hooks `useDebounce` e `useMovies`** (CA-14, CA-21, CA-22)
+- [x] **T-12. Hooks `useDebounce` e `useMovies`** (CA-14, CA-21, CA-22)
   - `useDebounce(valor, 300)`.
   - `useMovies(page, search)`: status `loading`, `error` ou `success`,
     `retry()` e cancelamento da requisição anterior com `AbortController`.
   - Verificação: build e lint passam, sem avisos da regra de dependências
     dos hooks.
 
-- [ ] **T-13. Rotas e `NotFoundPage`** (CA-9, DEC-12)
+- [x] **T-13. Rotas e `NotFoundPage`** (CA-9, DEC-12)
   - `BrowserRouter` em `main.tsx`; `App.tsx` com `/` → `CatalogPage` (por
     enquanto um título provisório) e `*` → `NotFoundPage`.
   - Verificação: build e lint passam; com `bun run dev`, `/` abre a página
@@ -158,14 +158,14 @@ Quando uma task de frontend diz "build e lint passam", significa que
 
 ## Fase 3 — Componentes
 
-- [ ] **T-14. `StarRating`** (CA-6, CA-7)
+- [x] **T-14. `StarRating`** (CA-6, CA-7)
   - 5 estrelas com preenchimento proporcional (meia estrela), número com 1
     casa em pt-BR ("3,5") e "N avaliações". Sem média, mostra "Sem
     avaliações".
   - Verificação: build e lint passam; na página provisória, 0, 2,5, 3,8 e
     5 estrelas e o caso sem média aparecem corretamente.
 
-- [ ] **T-15. `MovieCard`** (CA-6, CA-8, CA-9)
+- [x] **T-15. `MovieCard`** (CA-6, CA-8, CA-9)
   - O cartão mostra:
     - o pôster, trocado pela imagem padrão em `onError` ou quando vier
       `null`;
@@ -179,18 +179,18 @@ Quando uma task de frontend diz "build e lint passam", significa que
     fixos, aparecem os casos de 11 gêneros, 3 diretores, sem pôster, pôster
     quebrado e título de 151 caracteres.
 
-- [ ] **T-16. `SearchBar`** (CA-17, CA-26)
+- [x] **T-16. `SearchBar`** (CA-17, CA-26)
   - Campo com rótulo acessível, `maxLength=200` e botão "Limpar" visível
     quando há texto.
   - Verificação: build e lint passam; o campo não aceita o 201º caractere.
 
-- [ ] **T-17. `Pagination`** (CA-3, CA-4)
+- [x] **T-17. `Pagination`** (CA-3, CA-4)
   - Primeira, anterior, "Página X de Y" (números em pt-BR), próxima e
     última, com os botões dos limites desabilitados.
   - Verificação: build e lint passam; com Y = 1, os quatro botões ficam
     desabilitados.
 
-- [ ] **T-18. Estados da tela** (CA-21, CA-22, CA-23, CA-24)
+- [x] **T-18. Estados da tela** (CA-21, CA-22, CA-23, CA-24)
   - `LoadingState`, `ErrorState` (mensagem + "Tentar novamente") e
     `EmptyState` (mensagem + ação opcional).
   - Verificação: build e lint passam.

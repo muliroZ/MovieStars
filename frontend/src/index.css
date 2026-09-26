@@ -1,0 +1,57 @@
+/* Cores e medidas usadas pelos componentes. Tema escuro inspirado no Letterboxd. */
+:root {
+  --color-bg: #14181c;
+  --color-surface: #1f252c;
+  --color-surface-hover: #283039;
+  --color-border: #2c3440;
+  --color-text: #e1e5ea;
+  --color-text-muted: #9aa5b1;
+  --color-accent: #40bcf4;
+  --color-star: #f5c518;
+  --color-star-empty: #3d4550;
+  --color-danger: #ff7b7b;
+  --radius: 8px;
+
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.4;
+  color: var(--color-text);
+  background: var(--color-bg);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+}
+
+a {
+  color: var(--color-accent);
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+/* Esconde visualmente, mas mantém para leitores de tela. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

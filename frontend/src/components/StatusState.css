@@ -1,0 +1,42 @@
+/* Estilo comum de LoadingState, ErrorState e EmptyState. */
+.status-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 3rem 1rem;
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.status-state__message {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.status-state--error .status-state__message {
+  color: var(--color-danger);
+}
+
+.status-state__button {
+  padding: 0.5rem 1rem;
+  color: var(--color-bg);
+  background: var(--color-accent);
+  border: none;
+  border-radius: var(--radius);
+}
+
+.status-state__spinner {
+  width: 2rem;
+  height: 2rem;
+  border: 3px solid var(--color-border);
+  border-top-color: var(--color-accent);
+  border-radius: 50%;
+  animation: status-spin 0.8s linear infinite;
+}
+
+@keyframes status-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

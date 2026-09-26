@@ -1,0 +1,40 @@
+.star-rating {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.star-rating--empty {
+  color: var(--color-text-muted);
+}
+
+/* Duas camadas de estrelas: a de cima é cortada na largura da média (meia estrela etc.). */
+.star-rating__stars {
+  position: relative;
+  display: inline-block;
+  line-height: 1;
+  letter-spacing: 1px;
+}
+
+.star-rating__base {
+  color: var(--color-star-empty);
+}
+
+.star-rating__fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  overflow: hidden;
+  white-space: nowrap;
+  color: var(--color-star);
+}
+
+.star-rating__value {
+  font-weight: 600;
+}
+
+.star-rating__count {
+  color: var(--color-text-muted);
+}

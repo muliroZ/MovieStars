@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 300" role="img" aria-label="Pôster indisponível">
+  <rect width="200" height="300" fill="#2a2d36"/>
+  <g fill="none" stroke="#6b7080" stroke-width="6" stroke-linejoin="round">
+    <rect x="55" y="105" width="90" height="70" rx="6"/>
+    <path d="M55 125h90M75 105l-8 20M100 105l-8 20M125 105l-8 20"/>
+  </g>
+  <text x="100" y="215" fill="#8a8fa0" font-family="system-ui, sans-serif" font-size="16" text-anchor="middle">Sem pôster</text>
+</svg>
