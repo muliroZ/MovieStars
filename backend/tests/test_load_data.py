@@ -6,8 +6,9 @@ from pathlib import Path
 import pytest
 from sqlalchemy import Engine, create_engine, event, text
 
+from app.core.config import Settings
 from app.db.base import Base
-from app.movies import models  # noqa: F401  Registra os modelos ORM.
+from app.movies import load_data  # também registra os modelos ORM no metadata
 from app.movies.load_data import (
     CSV_FILES,
     DEFAULT_DATA_DIR,
@@ -18,8 +19,11 @@ from app.movies.load_data import (
     check_tables,
     convert_value,
     fix_synopsis_quotes,
+    format_report,
     load_file,
+    main,
     read_existing_keys,
+    run_load,
 )
 
 # CSVs mínimos e válidos: {caminho relativo: (cabeçalho, linhas)}.
@@ -202,6 +206,11 @@ def test_check_files_reports_missing_file(csv_dir: Path) -> None:
 
     with pytest.raises(LoadError, match="dim_genres.csv: arquivo não encontrado"):
         check_files(csv_dir)
+
+
+def test_check_files_reports_missing_folder(tmp_path: Path) -> None:
+    with pytest.raises(LoadError, match="pasta de dados não encontrada"):
+        check_files(tmp_path / "nao_existe")
 
 
 def test_check_files_reports_missing_columns(csv_dir: Path) -> None:
@@ -578,3 +587,214 @@ def test_invalid_children_rows_are_discarded(database_url: str, csv_dir: Path) -
     assert report.issues[
         ("dim_reviews.csv", "linha descartada: sk_movie_id já usado por outra chave")
     ] == [3]
+
+
+# --- T-10: run_load (CA-1, CA-5, CA-6, CA-10, CA-15) ---
+
+EXPECTED_ROWS = {csv_file.table: len(VALID_CSVS[csv_file.path][1]) for csv_file in CSV_FILES}
+
+
+def table_counts(database_url: str) -> dict[str, int]:
+    return {
+        table: fetch(database_url, f"SELECT COUNT(*) FROM {table}")[0][0] for table in EXPECTED_ROWS
+    }
+
+
+def orphan_counts(database_url: str) -> dict[str, int]:
+    """Registros cuja chave estrangeira não encontra o registro pai."""
+
+    counts = {}
+    for table in Base.metadata.sorted_tables:
+        for foreign_key in table.foreign_keys:
+            child, parent = foreign_key.parent, foreign_key.column
+            sql = (
+                f"SELECT COUNT(*) FROM {table.name} LEFT JOIN {parent.table.name} "
+                f"ON {table.name}.{child.name} = {parent.table.name}.{parent.name} "
+                f"WHERE {parent.table.name}.{parent.name} IS NULL"
+            )
+            counts[f"{table.name}.{child.name}"] = fetch(database_url, sql)[0][0]
+    return counts
+
+
+def fail_on(table: str, original=load_data.load_file):
+    """Versão de load_file que quebra ao chegar na tabela indicada."""
+
+    def failing_load_file(conn, data_dir, csv_file, known, report):
+        if csv_file.table == table:
+            raise RuntimeError("falha simulada")
+        original(conn, data_dir, csv_file, known, report)
+
+    return failing_load_file
+
+
+def test_run_load_saves_everything_without_orphans(database_url: str, csv_dir: Path) -> None:
+    report = run_load(database_url.replace("sqlite://", "sqlite+aiosqlite://"), csv_dir)
+
+    assert {stats.table: stats.inserted for stats in report.tables} == EXPECTED_ROWS
+    assert table_counts(database_url) == EXPECTED_ROWS
+    assert set(orphan_counts(database_url).values()) == {0}
+    assert report.elapsed_seconds > 0
+
+
+def test_run_load_twice_ignores_existing_rows(database_url: str, csv_dir: Path) -> None:
+    run_load(database_url, csv_dir)
+    second = run_load(database_url, csv_dir)
+
+    assert table_counts(database_url) == EXPECTED_ROWS
+    for stats in second.tables:
+        assert (stats.inserted, stats.ignored, stats.discarded) == (0, stats.read, 0)
+
+
+def test_run_load_rolls_back_everything_on_failure(
+    database_url: str, csv_dir: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(load_data, "load_file", fail_on("bridge_movie_person"))
+
+    with pytest.raises(RuntimeError, match="falha simulada"):
+        run_load(database_url, csv_dir)
+
+    assert set(table_counts(database_url).values()) == {0}
+
+
+def test_run_load_checks_files_before_opening_database(csv_dir: Path, tmp_path: Path) -> None:
+    (csv_dir / REVIEWS).unlink()
+    database_path = tmp_path / "nao_criado.db"
+
+    with pytest.raises(LoadError, match="movies_reviews.csv"):
+        run_load(f"sqlite:///{database_path}", csv_dir)
+
+    assert not database_path.exists()
+
+
+def test_run_load_requires_migrations(csv_dir: Path, tmp_path: Path) -> None:
+    with pytest.raises(LoadError, match="alembic upgrade head"):
+        run_load(f"sqlite:///{tmp_path / 'vazio.db'}", csv_dir)
+
+
+# --- T-11: reset (CA-11) ---
+
+
+def add_extra_review(database_url: str) -> None:
+    engine = create_engine(database_url)
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                "INSERT INTO movie_reviews"
+                " (sk_movie_review_id, sk_movie_id, nome, nota, comentario)"
+                " VALUES ('extra', 'm1', 'Admin', 10, 'Criada pelo sistema.')"
+            )
+        )
+    engine.dispose()
+
+
+def test_run_load_without_reset_keeps_existing_data(database_url: str, csv_dir: Path) -> None:
+    run_load(database_url, csv_dir)
+    add_extra_review(database_url)
+
+    run_load(database_url, csv_dir)
+
+    assert table_counts(database_url)["movie_reviews"] == EXPECTED_ROWS["movie_reviews"] + 1
+
+
+def test_run_load_with_reset_reloads_from_scratch(database_url: str, csv_dir: Path) -> None:
+    run_load(database_url, csv_dir)
+    add_extra_review(database_url)
+
+    report = run_load(database_url, csv_dir, reset=True)
+
+    assert table_counts(database_url) == EXPECTED_ROWS
+    assert {stats.table: stats.inserted for stats in report.tables} == EXPECTED_ROWS
+
+
+def test_failed_reset_keeps_previous_data(
+    database_url: str, csv_dir: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    run_load(database_url, csv_dir)
+    add_extra_review(database_url)
+    monkeypatch.setattr(load_data, "load_file", fail_on("movie_reviews"))
+
+    with pytest.raises(RuntimeError):
+        run_load(database_url, csv_dir, reset=True)
+
+    assert table_counts(database_url)["movie_reviews"] == EXPECTED_ROWS["movie_reviews"] + 1
+
+
+# --- T-12: format_report (CA-16, CA-17, CA-18) ---
+
+
+def test_format_report_shows_counters_and_grouped_issues() -> None:
+    report = LoadReport(
+        tables=[TableStats("dim_movies", read=95645, inserted=95640, ignored=0, discarded=5)],
+        synopses_fixed=4801,
+        elapsed_seconds=18.44,
+    )
+    for line in range(2, 14):  # 12 ocorrências do mesmo motivo
+        report.add_issue("movies_reviews.csv", "linha descartada: nota fora de 0–10", line)
+    report.add_issue("dim_movies.csv", "campo anulado: data_lancamento inválido", 88)
+
+    text_report = format_report(report)
+
+    assert "Carga concluída em 18,4 s" in text_report
+    table_row = next(line for line in text_report.splitlines() if line.startswith("dim_movies"))
+    assert table_row.split() == ["dim_movies", "95.645", "95.640", "0", "5"]
+    assert "Correções: 4.801 sinopses com aspas corrigidas" in text_report
+    assert (
+        "movies_reviews.csv: 12 × linha descartada: nota fora de 0–10"
+        " (linhas 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 e mais 2)"
+    ) in text_report
+    assert "dim_movies.csv: 1 × campo anulado: data_lancamento inválido (linhas 88)" in text_report
+
+
+def test_format_report_without_issues() -> None:
+    assert "Ocorrências: nenhuma" in format_report(LoadReport())
+
+
+# --- T-13: main (CA-1, CA-2, CA-3, CA-11, CA-14, CA-15) ---
+
+
+@pytest.fixture
+def use_database(monkeypatch: pytest.MonkeyPatch):
+    """Faz o main usar o banco indicado, nunca o moviestars.db do .env."""
+
+    def _use(database_url: str) -> None:
+        monkeypatch.setattr(load_data, "get_settings", lambda: Settings(database_url=database_url))
+
+    return _use
+
+
+def test_main_returns_1_when_files_are_missing(
+    use_database, database_url: str, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    use_database(database_url)
+
+    assert main(["--data-dir", str(tmp_path / "sem_csvs")]) == 1
+    assert "Nada foi gravado." in capsys.readouterr().err
+    assert set(table_counts(database_url).values()) == {0}
+
+
+def test_main_returns_1_on_unexpected_error(
+    use_database,
+    database_url: str,
+    csv_dir: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    use_database(database_url)
+    monkeypatch.setattr(load_data, "load_file", fail_on("dim_reviews"))
+
+    assert main(["--data-dir", str(csv_dir)]) == 1
+    assert "nada foi gravado" in capsys.readouterr().err
+    assert set(table_counts(database_url).values()) == {0}
+
+
+def test_main_loads_and_prints_report(
+    use_database, database_url: str, csv_dir: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    use_database(database_url)
+
+    assert main(["--data-dir", str(csv_dir)]) == 0
+    assert "Carga concluída" in capsys.readouterr().out
+    assert table_counts(database_url) == EXPECTED_ROWS
+
+    assert main(["--data-dir", str(csv_dir), "--reset"]) == 0
+    assert table_counts(database_url) == EXPECTED_ROWS

@@ -8,8 +8,11 @@ A carga roda em uma única transação: ou todos os arquivos são gravados, ou
 nada é gravado. Ver `specs/features/000-carga-de-dados/`.
 """
 
+import argparse
 import csv
 import math
+import sys
+import time
 from dataclasses import dataclass, field
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
@@ -19,17 +22,21 @@ from sqlalchemy import (
     Column,
     Connection,
     Date,
+    Engine,
     Float,
     Integer,
     Numeric,
     String,
     Table,
+    create_engine,
+    event,
     func,
     inspect,
     select,
 )
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 
+from app.core.config import get_settings
 from app.db.base import Base
 from app.movies import models  # também registra as tabelas no metadata
 
@@ -98,6 +105,9 @@ def expected_columns(table_name: str) -> list[str]:
 
 def check_files(data_dir: Path) -> None:
     """Confere, antes de gravar qualquer dado, se todos os CSVs existem e têm as colunas."""
+
+    if not data_dir.is_dir():
+        raise LoadError(f"pasta de dados não encontrada: {data_dir}")
 
     problems: list[str] = []
     for csv_file in CSV_FILES:
@@ -372,3 +382,135 @@ def _insert_batch(conn: Connection, table: Table, batch: list[dict]) -> None:
 
 def _count_rows(conn: Connection, table: Table) -> int:
     return conn.execute(select(func.count()).select_from(table)).scalar_one()
+
+
+def reset_tables(conn: Connection) -> None:
+    """Apaga os dados das 10 tabelas, das filhas para as pais (CA-11)."""
+
+    for csv_file in reversed(CSV_FILES):
+        conn.execute(Base.metadata.tables[csv_file.table].delete())
+
+
+def run_load(database_url: str, data_dir: Path, reset: bool = False) -> LoadReport:
+    """Executa a carga completa em uma única transação e retorna o relatório.
+
+    Qualquer erro desfaz tudo, inclusive o reset (CA-15).
+    """
+
+    check_files(data_dir)  # antes de abrir o banco: nada é tocado se faltar arquivo
+
+    start = time.perf_counter()
+    report = LoadReport()
+    engine = _create_engine(database_url)
+    try:
+        with engine.begin() as conn:
+            check_tables(conn)
+            if reset:
+                reset_tables(conn)
+            known = read_existing_keys(conn)
+            for csv_file in CSV_FILES:
+                load_file(conn, data_dir, csv_file, known, report)
+    finally:
+        engine.dispose()
+
+    report.elapsed_seconds = time.perf_counter() - start
+    return report
+
+
+def _create_engine(database_url: str) -> Engine:
+    """Engine síncrona sobre o mesmo arquivo da API, com chaves estrangeiras ativas.
+
+    A carga é um script sem concorrência, então o driver síncrono basta (DEC-2);
+    o Alembic faz o mesmo em `migrations/env.py`.
+    """
+
+    engine = create_engine(database_url.replace("+aiosqlite", ""))
+
+    @event.listens_for(engine, "connect")
+    def _enable_foreign_keys(dbapi_connection: object, connection_record: object) -> None:
+        del connection_record
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
+
+    return engine
+
+
+MAX_LINES_PER_ISSUE = 10
+
+
+def format_report(report: LoadReport) -> str:
+    """Monta o texto do relatório final (CA-16, CA-17)."""
+
+    lines = [f"Carga concluída em {_decimal_br(report.elapsed_seconds)} s", ""]
+    lines.append(
+        f"{'Tabela':<25}{'Lidas':>10}{'Inseridas':>11}{'Ignoradas':>11}{'Descartadas':>13}"
+    )
+    for stats in report.tables:
+        lines.append(
+            f"{stats.table:<25}{_int_br(stats.read):>10}{_int_br(stats.inserted):>11}"
+            f"{_int_br(stats.ignored):>11}{_int_br(stats.discarded):>13}"
+        )
+
+    lines += ["", f"Correções: {_int_br(report.synopses_fixed)} sinopses com aspas corrigidas", ""]
+
+    if not report.issues:
+        lines.append("Ocorrências: nenhuma")
+    else:
+        lines.append("Ocorrências:")
+        for (file_name, reason), line_numbers in report.issues.items():
+            shown = ", ".join(str(number) for number in line_numbers[:MAX_LINES_PER_ISSUE])
+            hidden = len(line_numbers) - MAX_LINES_PER_ISSUE
+            more = f" e mais {_int_br(hidden)}" if hidden > 0 else ""
+            lines.append(
+                f"  {file_name}: {_int_br(len(line_numbers))} × {reason} (linhas {shown}{more})"
+            )
+
+    return "\n".join(lines)
+
+
+def _int_br(number: int) -> str:
+    return f"{number:,}".replace(",", ".")
+
+
+def _decimal_br(number: float) -> str:
+    return f"{number:.1f}".replace(".", ",")
+
+
+def main(argv: list[str] | None = None) -> int:
+    """Ponto de entrada do comando. Retorna 0 se a carga terminou e 1 se foi interrompida."""
+
+    parser = argparse.ArgumentParser(
+        prog="python -m app.movies.load_data",
+        description="Carrega os CSVs do catálogo no banco configurado em DATABASE_URL.",
+    )
+    parser.add_argument(
+        "--data-dir",
+        type=Path,
+        default=DEFAULT_DATA_DIR,
+        help="pasta com as subpastas bases_atv_dev1/ e bases_atv_dev_2/ (padrão: %(default)s)",
+    )
+    parser.add_argument(
+        "--reset",
+        action="store_true",
+        help="apaga os dados das 10 tabelas antes de carregar (nunca é o padrão)",
+    )
+    args = parser.parse_args(argv)
+
+    print(f"Carregando os CSVs de {args.data_dir} ...", flush=True)
+    try:
+        report = run_load(get_settings().database_url, args.data_dir, reset=args.reset)
+    except LoadError as error:
+        print(f"Erro: {error}\nNada foi gravado.", file=sys.stderr)
+        return 1
+    except Exception as error:
+        print(f"Erro inesperado ({type(error).__name__}): {error}", file=sys.stderr)
+        print("A transação foi desfeita; nada foi gravado.", file=sys.stderr)
+        return 1
+
+    print(format_report(report))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

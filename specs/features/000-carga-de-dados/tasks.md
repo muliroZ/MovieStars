@@ -112,7 +112,7 @@ os testes que a cobrem.
 
 ## Fase 4 — Orquestração
 
-- [ ] **T-10. `run_load(database_url, data_dir, reset)`** (CA-1, CA-5, CA-6, CA-10, CA-15)
+- [x] **T-10. `run_load(database_url, data_dir, reset)`** (CA-1, CA-5, CA-6, CA-10, CA-15)
   - Engine síncrona (URL sem `+aiosqlite`) com `PRAGMA foreign_keys=ON` em
     cada conexão.
   - Executa `check_files`, depois `with engine.begin()`: `check_tables`,
@@ -127,7 +127,7 @@ os testes que a cobrem.
     - `check_files` falhando: nenhuma tabela é tocada.
   - Verificação: `pytest tests/test_load_data.py` passa.
 
-- [ ] **T-11. `reset_tables(conn)` e opção `reset`** (CA-11)
+- [x] **T-11. `reset_tables(conn)` e opção `reset`** (CA-11)
   - Apaga as 10 tabelas na ordem inversa, dentro da mesma transação da
     carga. Só roda quando `reset=True`.
   - Testes: com dados alterados no banco (ex.: uma avaliação a mais),
@@ -137,7 +137,7 @@ os testes que a cobrem.
 
 ## Fase 5 — Relatório e linha de comando
 
-- [ ] **T-12. `format_report(report)`** (CA-16, CA-17, CA-18)
+- [x] **T-12. `format_report(report)`** (CA-16, CA-17, CA-18)
   - Tabela com lidas, inseridas, ignoradas e descartadas por tabela;
     total de sinopses corrigidas; ocorrências agrupadas por arquivo e
     motivo, com até 10 números de linha e "... e mais N".
@@ -145,7 +145,7 @@ os testes que a cobrem.
     aparecem agrupadas, com 10 linhas listadas e "e mais 2".
   - Verificação: `pytest tests/test_load_data.py` passa.
 
-- [ ] **T-13. `main()` e `python -m app.movies.load_data`** (CA-1, CA-2, CA-3, CA-11, CA-14, CA-15)
+- [x] **T-13. `main()` e `python -m app.movies.load_data`** (CA-1, CA-2, CA-3, CA-11, CA-14, CA-15)
   - `argparse` com `--data-dir` (padrão `DEFAULT_DATA_DIR`) e `--reset`.
   - Lê o `database_url` de `get_settings()` e imprime o relatório.
   - Se houver `LoadError` ou erro inesperado, imprime a mensagem e "nada
