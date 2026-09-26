@@ -35,7 +35,7 @@ os testes que a cobrem.
 
 ## Fase 1 — Checagens antes de gravar
 
-- [ ] **T-03. `check_files(data_dir)`** (CA-14)
+- [x] **T-03. `check_files(data_dir)`** (CA-14)
   - Confere se cada arquivo existe e se o cabeçalho tem todas as colunas da
     tabela, exceto as que têm valor padrão do banco (`created_at`). Colunas
     extras são aceitas.
@@ -45,7 +45,7 @@ os testes que a cobrem.
     válidos passam.
   - Verificação: `pytest tests/test_load_data.py` passa.
 
-- [ ] **T-04. `check_tables(conn)`** (CA-3)
+- [x] **T-04. `check_tables(conn)`** (CA-3)
   - Confere com `sqlalchemy.inspect` se as 10 tabelas existem. Se faltar
     alguma, lança `LoadError` com a orientação
     `.venv/bin/alembic upgrade head`.
@@ -55,7 +55,7 @@ os testes que a cobrem.
 
 ## Fase 2 — Conversão e correção de valores
 
-- [ ] **T-05. `convert_value(column, raw)`** (CA-7, CA-8, CA-9, CA-13)
+- [x] **T-05. `convert_value(column, raw)`** (CA-7, CA-8, CA-9, CA-13)
   - Converte conforme o tipo da coluna no models: `String` como está e sem
     `strip`, `Integer` (aceita `"2375.0"`), `Double`, `Numeric` como
     `Decimal`, e `Date` no formato `AAAA-MM-DD`.
@@ -66,17 +66,19 @@ os testes que a cobrem.
     bordas não muda; `"9.8"` continua `9.8`.
   - Verificação: `pytest tests/test_load_data.py` passa.
 
-- [ ] **T-06. `fix_synopsis_quotes(text)`** (CA-18)
-  - Aplica a regra do plan: remove a aspa inicial, remove a final se
-    existir e troca `""` por `"`. Retorna o texto e se houve correção.
-  - Testes: aspas nas duas pontas; só a inicial (texto cortado); aspas
-    legítimas no início (`"""Kill Bill"" ..."`); sem aspas, não muda;
-    aspas só no meio, não muda.
+- [x] **T-06. `fix_synopsis_quotes(text)`** (CA-18)
+  - Aplica a regra do plan: remove a aspa inicial, remove a final só se o
+    texto terminar com número ímpar de aspas e troca `""` por `"`. Retorna
+    o texto e se houve correção.
+  - Testes: aspas nas duas pontas; só a inicial (texto cortado); cortado
+    logo após aspa interna (termina em `""`); citação no fim do texto
+    (termina em `"""`); aspas legítimas no início (`"""Kill Bill"" ..."`);
+    sem aspas, não muda; aspas só no meio, não muda.
   - Verificação: `pytest tests/test_load_data.py` passa.
 
 ## Fase 3 — Leitura, validação e gravação
 
-- [ ] **T-07. Ler as chaves e nomes já existentes no banco** (CA-6, CA-10)
+- [x] **T-07. Ler as chaves e nomes já existentes no banco** (CA-6, CA-10)
   - Função que monta os conjuntos de chaves válidas e os mapas de
     nome → chave (`id_filme`, `nome_genero`, `nome_produtora`,
     `nome_pessoa` + `tipo_pessoa`) a partir das 4 tabelas pai, conforme a
@@ -85,7 +87,7 @@ os testes que a cobrem.
     ele aparece.
   - Verificação: `pytest tests/test_load_data.py` passa.
 
-- [ ] **T-08. `load_file` para as tabelas pai** (CA-5, CA-7, CA-12, CA-13, CA-17, CA-18)
+- [x] **T-08. `load_file` para as tabelas pai** (CA-5, CA-7, CA-12, CA-13, CA-17, CA-18)
   - Leitura em fluxo com `csv.DictReader` e gravação em lotes de 5.000
     linhas com `INSERT ... ON CONFLICT DO NOTHING`.
   - Contagem de inseridas e ignoradas por `COUNT(*)` antes e depois.
@@ -99,7 +101,7 @@ os testes que a cobrem.
     linha com colunas a mais descartada; sinopse corrigida e contada.
   - Verificação: `pytest tests/test_load_data.py` passa.
 
-- [ ] **T-09. `load_file` para as tabelas filhas** (CA-6, CA-9, CA-12)
+- [x] **T-09. `load_file` para as tabelas filhas** (CA-6, CA-9, CA-12)
   - Aplica as regras das tabelas 5 a 10 do plan: referências para chaves
     válidas, par repetido nas associações, `sk_movie_id` repetido em
     `dim_reviews` e `nota` entre 0 e 10.

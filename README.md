@@ -105,7 +105,7 @@ Resumo; o texto completo está na seção 4 da
   resumo de avaliações divergente) vão para o banco sem correção. Só é
   descartado ou anulado o que o banco não aceita.
 - **Exceção, aspas nas sinopses:** 4.801 sinopses vêm com aspas de escape
-  duplicadas; a carga remove as aspas extras. 2.825 delas vêm cortadas na
+  duplicadas; a carga remove as aspas extras. 3.312 delas vêm cortadas na
   origem e não há como recuperar o texto.
 - **Duração 0:** 10.160 filmes têm duração 0; a interface exibe "não
   informada".

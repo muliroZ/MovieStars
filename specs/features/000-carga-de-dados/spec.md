@@ -110,8 +110,14 @@ Os critérios abaixo tratam apenas de valores que o banco não aceita.
 - **CA-18** (H-1, H-4). Sinopses que começam com aspas trazem um defeito de
   escape da origem: aspas envolvendo o texto e aspas internas dobradas
   (ex.: `"Julia ... a ""movie within the movie"" ..."`). Para essas
-  sinopses, a carga remove a aspa inicial, remove a aspa final quando
-  existir e troca cada par de aspas internas (`""`) por uma só (`"`).
+  sinopses, a carga:
+  1. remove a aspa inicial;
+  2. remove a aspa final somente se o texto terminar com um número ímpar de
+     aspas seguidas. Uma aspa é a de fechamento. Três são uma aspa interna
+     dobrada seguida da de fechamento. Duas são só uma aspa interna dobrada,
+     porque o texto foi cortado logo depois dela e não tem fechamento;
+  3. troca cada par de aspas internas (`""`) por uma só (`"`).
+
   Sinopses que não começam com aspas não são alteradas. O relatório informa
   quantas sinopses foram corrigidas (D-1).
 
@@ -152,7 +158,7 @@ Os critérios abaixo tratam apenas de valores que o banco não aceita.
   seção 4.2). Nos dados atuais, a quantidade de avaliações bate em 22.101 de
   26.604 filmes, a média bate em 20.003 de 25.423, e 14.561 filmes com
   avaliações não aparecem em `dim_reviews`.
-- **Sinopses cortadas na origem.** 2.825 das sinopses corrigidas pelo CA-18
+- **Sinopses cortadas na origem.** 3.312 das sinopses corrigidas pelo CA-18
   vêm cortadas no meio do texto (só 6 terminam com pontuação final). O
   texto perdido não pode ser recuperado; a carga grava o que existe.
 - **Duração 0.** 10.160 filmes (10,6%) têm `duracao_minutos = 0`, que
@@ -179,8 +185,10 @@ Os critérios abaixo tratam apenas de valores que o banco não aceita.
 - **D-1.** Sinopses com defeito de escape de aspas são corrigidas (CA-18),
   em vez de gravadas como estão. Motivo: as aspas extras são um defeito da
   origem, não conteúdo, e apareceriam na tela do filme. Afeta 4.801
-  sinopses: 1.976 com aspas nas duas pontas e 2.825 cortadas, só com a aspa
-  inicial.
+  sinopses: 1.489 completas, com aspa de fechamento, e 3.312 cortadas, sem
+  fechamento. Destas, 2.825 não terminam em aspas e 487 terminam em uma
+  aspa interna dobrada. A regra da aspa final por número ímpar foi ajustada
+  durante a implementação (T-06, 2026-09-26), aprovada pelo desenvolvedor.
 - **D-2.** `duracao_minutos = 0` é gravado como está; a interface trata o
   valor como "não informada". Alternativa descartada: gravar como nulo, que
   seria uma transformação de dado.

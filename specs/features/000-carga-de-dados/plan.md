@@ -139,8 +139,9 @@ Correção do CA-18, função `fix_synopsis_quotes(texto)`:
 ```text
 se o texto começa com '"':
     remove a primeira aspa
-    remove a última aspa, se existir
-    troca cada '""' por '"'
+    se o texto termina com um número ímpar de aspas seguidas:
+        remove a última aspa          # 1 = fechamento; 3 = "" interno + fechamento
+    troca cada '""' por '"'           # 2 no fim = "" interno de texto cortado
 ```
 
 ### Consultas feitas ao banco
