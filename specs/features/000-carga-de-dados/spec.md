@@ -2,7 +2,7 @@
 
 | Campo          | Valor                                   |
 |----------------|-----------------------------------------|
-| Status         | Aprovada                                |
+| Status         | Concluída                               |
 | Depende de     | — (apenas das migrações do repositório base) |
 | Bloqueia       | 001, 002, 003, 004                      |
 | Referências    | `specs/constitution.md` (seções 4.1 e 4.2) |

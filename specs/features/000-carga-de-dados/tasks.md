@@ -2,7 +2,7 @@
 
 | Campo  | Valor                                                   |
 |--------|---------------------------------------------------------|
-| Status | Aprovado — em implementação                             |
+| Status | Concluído (2026-09-26)                                  |
 | Spec   | [`spec.md`](spec.md) (aprovada)                         |
 | Plan   | [`plan.md`](plan.md) (aprovado)                         |
 
@@ -158,7 +158,7 @@ os testes que a cobrem.
 
 ## Fase 6 — Validação com os dados reais
 
-- [ ] **T-14. Carga real no `moviestars.db`** (CA-1, CA-5, CA-10, CA-18, RNF-1, RNF-2)
+- [x] **T-14. Carga real no `moviestars.db`** (CA-1, CA-5, CA-10, CA-18, RNF-1, RNF-2)
   - Rodar `.venv/bin/python -m app.movies.load_data` e conferir:
     - as contagens de inseridas batem com a tabela Q-3 da spec;
     - o relatório mostra 4.801 sinopses corrigidas;
@@ -168,10 +168,26 @@ os testes que a cobrem.
   - Verificação: saídas das duas execuções coladas no resumo da task; uma
     consulta de amostra confirma sinopse corrigida e texto com acento
     preservado.
+  - **Resultado (2026-09-26):**
+    - 1ª execução: 34,1 s, código 0. Inseridas = tabela Q-3 em todas as 10
+      tabelas, 0 descartadas, 4.801 sinopses corrigidas, "Ocorrências:
+      nenhuma".
+    - 2ª execução: 18,2 s, código 0. 0 inseridas e 100% ignoradas.
+    - Amostras:
+      - sinopse de Rings sem as aspas extras;
+      - `"Treasure Day"` com a aspa de fechamento;
+      - `Pós-Produção` e `Ótimo entretenimento, não decepciona.` intactos;
+      - nota `9.8` sem conversão;
+      - 38.308 `url_backdrop` NULL e nenhum texto vazio;
+      - 10.160 durações 0 mantidas;
+      - `qtd_tmdb` gravado como inteiro;
+      - `PRAGMA foreign_key_check` sem órfãos.
+    - As 544 sinopses que ainda começam com aspas são exatamente as que
+      começam com uma citação no texto original (`"""…`).
 
 ## Fase 7 — Documentação e fechamento
 
-- [ ] **T-15. Atualizar o `README.md`** (CA-2, CA-4)
+- [x] **T-15. Atualizar o `README.md`** (CA-2, CA-4)
   - Em "Como executar", trocar o comentário pendente pelo comando da carga,
     entre `alembic upgrade head` e `uvicorn`.
   - Documentar `--data-dir` (padrão `data/`) e `--reset`.
@@ -180,12 +196,12 @@ os testes que a cobrem.
   - Verificação: seguir o README do zero, com um banco novo apontado por
     `DATABASE_URL`, deixa a API com o catálogo carregado.
 
-- [ ] **T-16. Resolver os TODOs do `CLAUDE.md`** (CA-4)
+- [x] **T-16. Resolver os TODOs do `CLAUDE.md`** (CA-4)
   - Adicionar o comando da carga na seção "Comandos" e informar o caminho
     dos CSVs (`data/`) no "Mapa do código".
   - Verificação: `grep -n "TODO" CLAUDE.md` não encontra nada.
 
-- [ ] **T-17. Definição de pronto** (constituição, seção 6)
+- [x] **T-17. Definição de pronto** (constituição, seção 6)
   - `.venv/bin/pytest` e `.venv/bin/ruff check .` passam sem erros;
     `.venv/bin/ruff format .` não altera nada.
   - Todos os CA-1 a CA-18 conferidos contra os testes e a T-14.

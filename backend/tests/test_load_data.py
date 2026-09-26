@@ -737,7 +737,7 @@ def test_format_report_shows_counters_and_grouped_issues() -> None:
     assert "Carga concluída em 18,4 s" in text_report
     table_row = next(line for line in text_report.splitlines() if line.startswith("dim_movies"))
     assert table_row.split() == ["dim_movies", "95.645", "95.640", "0", "5"]
-    assert "Correções: 4.801 sinopses com aspas corrigidas" in text_report
+    assert "Correções: 4.801 sinopses com aspas corrigidas nas linhas lidas" in text_report
     assert (
         "movies_reviews.csv: 12 × linha descartada: nota fora de 0–10"
         " (linhas 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 e mais 2)"
@@ -798,3 +798,26 @@ def test_main_loads_and_prints_report(
 
     assert main(["--data-dir", str(csv_dir), "--reset"]) == 0
     assert table_counts(database_url) == EXPECTED_ROWS
+
+
+# --- Casos de borda da spec (T-17) ---
+
+
+def test_header_only_csv_is_not_an_error(database_url: str, csv_dir: Path) -> None:
+    write_rows(csv_dir, REVIEWS, [])
+
+    report = run_load(database_url, csv_dir)
+
+    reviews = stats_of(report, "movie_reviews")
+    assert (reviews.read, reviews.inserted, reviews.discarded) == (0, 0, 0)
+
+
+def test_row_with_missing_columns_is_discarded(database_url: str, csv_dir: Path) -> None:
+    write_rows(csv_dir, GENRES, [["Drama", "g1"], ["Horror"]])
+
+    report = run_load(database_url, csv_dir)
+
+    assert stats_of(report, "dim_genres").inserted == 1
+    assert report.issues[
+        ("dim_genres.csv", "linha descartada: número de colunas diferente do cabeçalho")
+    ] == [3]

@@ -17,7 +17,7 @@ O desenvolvedor está aprendendo Python/FastAPI e React/TypeScript.
 
 ## Fluxo de trabalho (SDD)
 
-Cada feature vive em `specs/NNN-nome-da-feature/` com três arquivos.
+Cada feature vive em `specs/features/NNN-nome-da-feature/` com três arquivos.
 Siga as etapas **em ordem** e **pare ao final de cada uma** para aprovação:
 
 1. **Spec** (`spec.md`): histórias de usuário, critérios de aceitação
@@ -49,14 +49,14 @@ python3 -m venv .venv
 .venv/bin/pip install -e ".[dev]"
 cp .env.example .env
 .venv/bin/alembic upgrade head          # cria/atualiza as tabelas
+.venv/bin/python -m app.movies.load_data          # carga dos CSVs (~35 s; repetível)
+.venv/bin/python -m app.movies.load_data --reset  # apaga e recarrega tudo
 .venv/bin/uvicorn app.main:app --reload # API em http://localhost:8000/docs
 .venv/bin/pytest                        # testes
 .venv/bin/ruff check .                  # lint
 .venv/bin/ruff format .                 # formatação
 .venv/bin/alembic revision --autogenerate -m "descricao"  # nova migração
 ```
-
-TODO: adicionar o comando da carga de dados quando a feature 000 existir.
 
 ### Frontend (`cd frontend`)
 
@@ -74,13 +74,16 @@ bun run lint
 - `backend/app/movies/{schemas,service,router}.py`: camadas do domínio
   (ver constituição, seção 5.2).
 - `backend/app/api/v1/router.py`: registro dos routers.
+- `backend/app/movies/load_data.py`: carga dos CSVs (feature 000), script
+  síncrono executado com `python -m`.
 - `backend/app/db/session.py`: engine e `get_db`.
 - `backend/migrations/versions/`: revisões Alembic.
 - `frontend/src/{api,types,pages,components,hooks}/`: ver constituição,
   seção 5.3.
 - `specs/`: constituição e features.
-
-TODO: informar o caminho dos arquivos CSV de carga inicial.
+- `data/bases_atv_dev1/` e `data/bases_atv_dev_2/`: CSVs de carga inicial
+  (versionados). O banco `backend/moviestars.db` ocupa ~550 MB
+  depois da carga.
 
 ## Armadilhas conhecidas
 

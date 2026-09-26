@@ -2,7 +2,7 @@
 
 | Campo       | Valor                                       |
 |-------------|---------------------------------------------|
-| Status      | Aprovado                                    |
+| Status      | Concluído                                   |
 | Spec        | [`spec.md`](spec.md) (aprovada)             |
 | Referências | `specs/constitution.md` (seções 3, 4.1, 5.2, 6) |
 
@@ -182,7 +182,7 @@ dim_movies               95.645       95.645          0            0
 ...
 movie_reviews            43.666       43.666          0            0
 
-Correções: 4.801 sinopses com aspas corrigidas (CA-18)
+Correções: 4.801 sinopses com aspas corrigidas nas linhas lidas (CA-18)
 
 Ocorrências:
   movies_reviews.csv: 2 linhas descartadas: nota fora de 0–10 (linhas 10, 57)
@@ -315,10 +315,9 @@ anotar o tempo e rodar de novo para confirmar CA-10.
 
 ## Riscos
 
-- **RNF-1 (menos de 1 min):** a estimativa é de 10 a 30 s, mas só a
-  validação manual confirma. Se passar do limite, o primeiro ajuste é
-  aumentar o tamanho do lote.
-- **`Decimal` no SQLite:** o SQLAlchemy pode emitir um aviso ao gravar
-  `Decimal` em `Numeric` no SQLite. O aviso é inofensivo, porque todos os
-  valores têm no máximo 2 casas decimais. Se incomodar, a conversão passa
-  a gerar `float`, e isso fica registrado aqui antes de mudar o código.
+- **RNF-1 (menos de 1 min):** confirmado na T-14 (2026-09-26). A primeira
+  carga no `moviestars.db` levou 34,1 s e a reexecução levou 18,2 s. O
+  pico de memória medido numa carga de teste foi de 566 MB. O banco
+  carregado ocupa 550 MB.
+- **`Decimal` no SQLite:** risco não se confirmou. O SQLAlchemy 2.1 não
+  emitiu nenhum aviso nos testes nem na carga real.

@@ -452,7 +452,9 @@ def format_report(report: LoadReport) -> str:
             f"{_int_br(stats.ignored):>11}{_int_br(stats.discarded):>13}"
         )
 
-    lines += ["", f"Correções: {_int_br(report.synopses_fixed)} sinopses com aspas corrigidas", ""]
+    # Contadas ao ler a linha; numa reexecução elas são lidas mas ignoradas pelo banco.
+    fixed = _int_br(report.synopses_fixed)
+    lines += ["", f"Correções: {fixed} sinopses com aspas corrigidas nas linhas lidas", ""]
 
     if not report.issues:
         lines.append("Ocorrências: nenhuma")
