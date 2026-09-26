@@ -634,6 +634,10 @@ def test_run_load_saves_everything_without_orphans(database_url: str, csv_dir: P
     assert table_counts(database_url) == EXPECTED_ROWS
     assert set(orphan_counts(database_url).values()) == {0}
     assert report.elapsed_seconds > 0
+    # coluna derivada (feature 001) preenchida pela carga, sem vir do CSV
+    assert fetch(
+        database_url, "SELECT sk_movie_id, titulo_normalizado FROM dim_movies ORDER BY 1"
+    ) == [("m1", "cidade de deus"), ("m2", "rings"), ("m3", "filme futuro")]
 
 
 def test_run_load_twice_ignores_existing_rows(database_url: str, csv_dir: Path) -> None:

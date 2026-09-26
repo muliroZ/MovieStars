@@ -358,9 +358,20 @@ manual no navegador, cobrindo cada CA da interface. Inclui a largura de
 
 ## Riscos
 
-- **Migração no `moviestars.db` (550 MB):** a migração acrescenta uma coluna
-  e preenche 95.645 linhas numa transação. Se falhar, o Alembic desfaz. A
-  estimativa é de poucos segundos.
+- **RNF-1: confirmado na T-09 (2026-09-26).** Medições da API com o
+  `moviestars.db` real, pior tempo de 5 execuções:
+
+  | Consulta                                  | Tempo   |
+  |-------------------------------------------|---------|
+  | página 1                                  | 16 ms   |
+  | última página (4.783)                     | 16 ms   |
+  | `search=ring` (514 resultados)            | 28 ms   |
+  | `search=a` (68.642 resultados)            | 17 ms   |
+  | `search=a`, última página (3.433)         | 28 ms   |
+  | `search=ação`                             | 37 ms   |
+
+- **Migração no `moviestars.db` (550 MB):** confirmado na T-03. Levou
+  1,4 s.
 - **Edição de títulos (feature 003):** se o `titulo_normalizado` não for
   atualizado junto com o título, a busca e a ordem ficam erradas para
   aquele filme (DEC-2).

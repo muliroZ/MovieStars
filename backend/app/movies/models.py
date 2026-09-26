@@ -16,6 +16,7 @@ from sqlalchemy import (
     Date,
     Double,
     ForeignKey,
+    Index,
     Integer,
     Numeric,
     String,
@@ -23,15 +24,27 @@ from sqlalchemy import (
     UniqueConstraint,
     func,
 )
+from sqlalchemy.engine.default import DefaultExecutionContext
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
+from app.movies.normalization import normalize_title
 
 
 def generate_surrogate_key() -> str:
     """Gera uma chave substituta textual no formato SHA-256."""
 
     return sha256(uuid4().bytes).hexdigest()
+
+
+def _normalized_title(context: DefaultExecutionContext) -> str:
+    """Valor padrão de `titulo_normalizado`: o `titulo` da própria linha, normalizado.
+
+    O SQLAlchemy chama esta função em todo insert (ORM ou em lote). Em updates
+    ela não roda: quem alterar `titulo` precisa atualizar esta coluna também.
+    """
+
+    return normalize_title(context.get_current_parameters()["titulo"])
 
 
 bridge_movie_genre = Table(
@@ -91,12 +104,22 @@ class DimMovie(Base):
     """Metadados descritivos de um filme."""
 
     __tablename__ = "dim_movies"
+    __table_args__ = (
+        # Ordem do catálogo: título sem acentos/maiúsculas, ano e chave (desempate).
+        Index(
+            "ix_dim_movies_ordem_catalogo", "titulo_normalizado", "ano_lancamento", "sk_movie_id"
+        ),
+    )
 
     sk_movie_id: Mapped[str] = mapped_column(
         String(64), primary_key=True, default=generate_surrogate_key
     )
     id_filme: Mapped[str] = mapped_column(String(50), unique=True, index=True)
     titulo: Mapped[str] = mapped_column(String(500), index=True)
+    # Usada na busca e na ordenação; preenchida automaticamente a partir de `titulo`.
+    titulo_normalizado: Mapped[str] = mapped_column(
+        String(500), default=_normalized_title, server_default=""
+    )
     data_lancamento: Mapped[date | None] = mapped_column(Date, default=None)
     ano_lancamento: Mapped[int | None] = mapped_column(Integer, index=True, default=None)
     duracao_minutos: Mapped[int | None] = mapped_column(Integer, default=None)

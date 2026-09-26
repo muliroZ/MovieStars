@@ -2,7 +2,7 @@
 
 | Campo  | Valor                                                   |
 |--------|---------------------------------------------------------|
-| Status | Em revisão                                              |
+| Status | Aprovado — em implementação                             |
 | Spec   | [`spec.md`](spec.md) (aprovada)                         |
 | Plan   | [`plan.md`](plan.md) (aprovado)                         |
 
@@ -15,7 +15,7 @@ Quando uma task de frontend diz "build e lint passam", significa que
 
 ## Fase 0 — Título normalizado (backend)
 
-- [ ] **T-01. `normalize_title`** (CA-2, CA-11)
+- [x] **T-01. `normalize_title`** (CA-2, CA-11)
   - Criar `app/movies/normalization.py` com a função do plan.
   - Testes em `tests/test_normalization.py`:
     - `"À La Recherche"` vira `"a la recherche"`;
@@ -24,7 +24,7 @@ Quando uma task de frontend diz "build e lint passam", significa que
     - aspas, espaços, dígitos e caracteres não latinos continuam iguais.
   - Verificação: `pytest tests/test_normalization.py` e `ruff check .` passam.
 
-- [ ] **T-02. Coluna `titulo_normalizado`, índice e migração 0002** (CA-2)
+- [x] **T-02. Coluna `titulo_normalizado`, índice e migração 0002** (CA-2)
   - Em `models.py`: coluna com `default` calculado e `server_default=""`, e
     o índice `ix_dim_movies_ordem_catalogo` em `__table_args__`.
   - Criar `migrations/versions/0002_titulo_normalizado.py`: adicionar a
@@ -38,7 +38,7 @@ Quando uma task de frontend diz "build e lint passam", significa que
     seguido de `alembic downgrade -1` e de novo `upgrade head`, num banco
     temporário apontado por `DATABASE_URL`, roda sem erro.
 
-- [ ] **T-03. Aplicar a migração no `moviestars.db`** (CA-2)
+- [x] **T-03. Aplicar a migração no `moviestars.db`** (CA-2)
   - Rodar `.venv/bin/alembic upgrade head`.
   - Verificação:
     - `alembic current` mostra `0002_titulo_normalizado (head)`;
@@ -49,7 +49,7 @@ Quando uma task de frontend diz "build e lint passam", significa que
 
 ## Fase 1 — API de listagem (backend)
 
-- [ ] **T-04. Fixtures de teste da API** (constituição, seção 6)
+- [x] **T-04. Fixtures de teste da API** (constituição, seção 6)
   - Criar `tests/conftest.py`:
     - banco SQLite temporário assíncrono com `create_all`;
     - substituição de `get_db` com `app.dependency_overrides`, removida ao
@@ -59,7 +59,7 @@ Quando uma task de frontend diz "build e lint passam", significa que
   - Verificação: um teste confere que `GET /health` responde pelo `client`
     e que o banco temporário começa vazio; `pytest` passa.
 
-- [ ] **T-05. Schemas e listagem paginada e ordenada** (CA-1, CA-2, CA-3, CA-24)
+- [x] **T-05. Schemas e listagem paginada e ordenada** (CA-1, CA-2, CA-3, CA-24)
   - `schemas.py` com `MovieListItem` e `MoviePage`.
   - Em `service.py`, `list_movies` com total, `pages`, ordem por título
     normalizado, ano e chave, `offset` e `limit`. Nesta task, sem busca e
@@ -74,7 +74,7 @@ Quando uma task de frontend diz "build e lint passam", significa que
     - dois filmes "Rings" (2017 e 2005) saem com 2005 primeiro.
   - Verificação: `pytest` passa.
 
-- [ ] **T-06. Busca** (CA-10, CA-11, CA-12, CA-13, CA-15)
+- [x] **T-06. Busca** (CA-10, CA-11, CA-12, CA-13, CA-15)
   - Filtro com `normalize_title(search.strip())` e
     `contains(..., autoescape=True)`.
   - Testes:
@@ -87,7 +87,7 @@ Quando uma task de frontend diz "build e lint passam", significa que
     - a busca tem paginação e ordem iguais às do catálogo.
   - Verificação: `pytest` passa.
 
-- [ ] **T-07. Média, gêneros e diretores** (CA-6, CA-7)
+- [x] **T-07. Média, gêneros e diretores** (CA-6, CA-7)
   - Consulta agregada das avaliações dos filmes da página;
     `media_estrelas = round(avg / 2, 1)`.
   - `selectinload` de gêneros e pessoas; diretores filtrados por tipo e em
@@ -101,7 +101,7 @@ Quando uma task de frontend diz "build e lint passam", significa que
     - filme sem gênero e sem diretor dá listas vazias.
   - Verificação: `pytest` passa.
 
-- [ ] **T-08. Rota `GET /api/v1/movies`** (CA-1, CA-25, CA-26)
+- [x] **T-08. Rota `GET /api/v1/movies`** (CA-1, CA-25, CA-26)
   - `router.py` com `Query` validado e `response_model=MoviePage`;
     registrar em `app/api/v1/router.py` com o prefixo `/movies`.
   - Testes pelo `client`:
@@ -112,7 +112,7 @@ Quando uma task de frontend diz "build e lint passam", significa que
   - Verificação: `pytest` e `ruff check .` passam; `/docs` mostra o
     endpoint com os três parâmetros.
 
-- [ ] **T-09. Desempenho com os dados reais** (RNF-1)
+- [x] **T-09. Desempenho com os dados reais** (RNF-1)
   - Com o `moviestars.db` migrado, medir o tempo de resposta de
     `GET /api/v1/movies` para:
     - página 1;
