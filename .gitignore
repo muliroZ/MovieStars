@@ -18,3 +18,7 @@ htmlcov/
 # Sistema operacional e IDE
 .DS_Store
 .vscode/
+
+# Frontend
+node_modules/
+dist/
