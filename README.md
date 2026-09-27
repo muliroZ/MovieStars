@@ -137,7 +137,7 @@ implementação, com revisão ao final de cada etapa.
 |---------------------------|-----------------|
 | 000 — Carga de dados      | Concluída       |
 | 001 — Catálogo e busca    | Concluída       |
-| 002 — Detalhes e média    | Não iniciada    |
+| 002 — Detalhes e média    | Plan aprovado   |
 | 003 — Gerenciar filmes    | Não iniciada    |
 | 004 — Avaliações          | Não iniciada    |
 
