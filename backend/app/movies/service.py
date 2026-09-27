@@ -10,6 +10,7 @@ from sqlalchemy import ColumnElement, Subquery, delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.core.cache import query_cache
 from app.movies.models import (
     DimGenre,
     DimMovie,
@@ -421,6 +422,7 @@ async def create_movie(db: AsyncSession, data: MovieInput) -> MovieDetail:
     )
     db.add(movie)
     await db.commit()
+    query_cache.clear()  # um filme novo muda totais e paginação (plan 101, DEC-3)
 
     detail = await get_movie(db, movie.sk_movie_id)
     assert detail is not None  # acabou de ser criado
@@ -450,6 +452,7 @@ async def update_movie(db: AsyncSession, sk_movie_id: str, data: MovieInput) -> 
         person for person in movie.people if person.tipo_pessoa != "Diretor"
     ] + directors
     await db.commit()
+    query_cache.clear()
     return await get_movie(db, sk_movie_id)
 
 
@@ -463,7 +466,10 @@ async def delete_movie(db: AsyncSession, sk_movie_id: str) -> bool:
 
     result = await db.execute(delete(DimMovie).where(DimMovie.sk_movie_id == sk_movie_id))
     await db.commit()
-    return result.rowcount > 0
+    deleted = result.rowcount > 0
+    if deleted:  # remover um filme inexistente não muda nada (spec 101, CA-11)
+        query_cache.clear()
+    return deleted
 
 
 def _editable_fields(data: MovieInput) -> dict[str, Any]:
@@ -538,5 +544,6 @@ async def create_review(db: AsyncSession, sk_movie_id: str, data: ReviewInput) -
     )
     db.add(review)
     await db.commit()
+    query_cache.clear()  # a média e a quantidade mudam em qualquer página
     await db.refresh(review)  # lê o created_at preenchido pelo banco
     return _to_review_item(review)

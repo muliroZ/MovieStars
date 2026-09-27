@@ -15,9 +15,17 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
+from app.core.cache import query_cache
 from app.db.base import Base
 from app.db.session import enable_sqlite_foreign_keys, get_db
 from app.main import app
+
+
+@pytest.fixture(autouse=True)
+def clear_query_cache() -> None:
+    """Esvazia o cache antes de cada teste: cada teste usa outro banco temporário (plan 101)."""
+
+    query_cache.clear()
 
 
 @pytest.fixture

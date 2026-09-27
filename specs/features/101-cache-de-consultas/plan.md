@@ -2,7 +2,7 @@
 
 | Campo       | Valor                                                 |
 |-------------|-------------------------------------------------------|
-| Status      | Aprovado                                              |
+| Status      | Concluído                                             |
 | Spec        | [`spec.md`](spec.md) (aprovada)                       |
 | Referências | `specs/constitution.md` (seções 3, 5.2, 6); plan 100 (DEC-2, DEC-15, Riscos) |
 
@@ -291,4 +291,17 @@ deste plan.
 - **Uma escrita nova esquecer a limpeza.** Toda escrita futura no serviço
   precisa chamar `query_cache.clear()` depois do `commit`; o `CLAUDE.md` passa
   a avisar, e os testes do CA-8 a CA-11 cobrem as quatro atuais.
-- **RNF-1 e RNF-2:** a medir na implementação (seção "Desempenho").
+- **RNF-1 e RNF-2: confirmados na T-08 (2026-09-27),** pela API com o
+  `moviestars.db` (pior tempo em 5 rodadas, com a API reiniciada antes de
+  cada uma; o corpo do `HIT` é idêntico ao do `MISS`):
+
+  | Consulta                      | `MISS`  | `HIT`  | Plan 100 |
+  |-------------------------------|---------|--------|----------|
+  | `sort=rating`, última página  | 421 ms  | 1,5 ms | 376 ms   |
+  | `sort=reviews`, última página | 377 ms  | 1,5 ms | 456 ms   |
+  | sem filtros, página 1         | 8,8 ms  | 1,7 ms | 7 ms     |
+  | `GET /genres`                 | 1,9 ms  | 0,7 ms | —        |
+
+  Os `MISS` variam na mesma faixa das medições do plan 100 (o custo do
+  cache não aparece ao lado da consulta), e todo `HIT` fica bem abaixo de
+  10 ms.

@@ -78,6 +78,9 @@ bun run lint
   síncrono executado com `python -m`.
 - `backend/app/movies/normalization.py`: `normalize_title` (sem acentos e
   maiúsculas), usado na busca e na ordem do catálogo (feature 001).
+- `backend/app/core/cache.py`: `QueryCache` e a instância `query_cache`
+  (feature 101). O router lê o cache em `GET /movies` e `GET /genres`
+  (`_cached`, cabeçalho `X-Cache`); o serviço o limpa depois de cada escrita.
 - `backend/tests/conftest.py`: fixtures `session` e `client` sobre um SQLite
   temporário; reutilize nos testes de novos endpoints.
 - `backend/tests/helpers.py`: `add_movie(...)` monta filmes de teste (gêneros,
@@ -182,6 +185,12 @@ bun run lint
 - **Índice de avaliações:** desde a migração 0004 é
   `ix_movie_reviews_movie_nota (sk_movie_id, nota)`, que cobre a lista por
   filme e o agregado; o antigo `ix_movie_reviews_sk_movie_id` não existe mais.
+- **Cache de consultas:** toda escrita nova no serviço precisa chamar
+  `query_cache.clear()` logo depois do `commit` (e só se algo mudou), senão o
+  catálogo mostra dados velhos por até 5 minutos. Testes que gravam pela
+  `session` entre duas consultas da API precisam chamar `query_cache.clear()`
+  (o `conftest.py` só limpa no início de cada teste). A API roda com um único
+  worker, porque o cache é por processo.
 
 ## Limites
 

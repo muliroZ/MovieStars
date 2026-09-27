@@ -1,11 +1,14 @@
 """Rotas HTTP do domínio de filmes."""
 
-from typing import Annotated
+import json
+from collections.abc import Awaitable, Callable
+from typing import Annotated, TypeVar, cast
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from fastapi.exceptions import RequestValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.cache import MISSING, query_cache
 from app.db.session import get_db
 from app.movies.schemas import (
     CatalogQuery,
@@ -33,6 +36,43 @@ router = APIRouter()
 genres_router = APIRouter()
 directors_router = APIRouter()
 
+T = TypeVar("T")
+
+
+async def _cached(key: str, response: Response, compute: Callable[[], Awaitable[T]]) -> T:
+    """Devolve o resultado guardado ou o calcula e guarda (plan 101, DEC-4 a DEC-6).
+
+    O cabeçalho X-Cache informa HIT (veio do cache), MISS (calculado agora) ou
+    BYPASS (cache desligado).
+    """
+
+    if not query_cache.enabled:
+        response.headers["X-Cache"] = "BYPASS"
+        return await compute()
+    cached = query_cache.get(key)
+    if cached is not MISSING:
+        response.headers["X-Cache"] = "HIT"
+        return cast(T, cached)  # guardado por esta mesma chave, com o mesmo tipo
+    # Anotada antes de ir ao banco: se uma escrita limpar o cache no meio da
+    # consulta, o resultado (talvez velho) não é guardado.
+    generation = query_cache.generation
+    value = await compute()
+    query_cache.set(key, value, generation)
+    response.headers["X-Cache"] = "MISS"
+    return value
+
+
+def _catalog_key(query: CatalogQuery) -> str:
+    """Chave do cache para uma consulta do catálogo já validada (plan 101, DEC-2).
+
+    Gêneros e status são ordenados: a mesma escolha em outra ordem usa a mesma entrada.
+    """
+
+    data = query.model_dump(mode="json")
+    data["genre"] = sorted(data["genre"])
+    data["status"] = sorted(data["status"])
+    return "movies:" + json.dumps(data, sort_keys=True, ensure_ascii=False)
+
 
 @router.get(
     "",
@@ -42,14 +82,19 @@ directors_router = APIRouter()
 async def get_movies(
     # Um modelo reúne os parâmetros da URL e as validações cruzadas (plan 100, DEC-2).
     query: Annotated[CatalogQuery, Query()],
+    response: Response,
     db: AsyncSession = Depends(get_db),
 ) -> Page[MovieListItem]:
-    return await list_movies(
-        db,
-        page=query.page,
-        page_size=query.page_size,
-        search=query.search,
-        filters=query.filters(),
+    return await _cached(
+        _catalog_key(query),
+        response,
+        lambda: list_movies(
+            db,
+            page=query.page,
+            page_size=query.page_size,
+            search=query.search,
+            filters=query.filters(),
+        ),
     )
 
 
@@ -88,8 +133,8 @@ async def read_movie_reviews(
 
 
 @genres_router.get("", response_model=list[str], summary="Gêneros cadastrados, em ordem alfabética")
-async def read_genres(db: AsyncSession = Depends(get_db)) -> list[str]:
-    return await list_genres(db)
+async def read_genres(response: Response, db: AsyncSession = Depends(get_db)) -> list[str]:
+    return await _cached("genres", response, lambda: list_genres(db))
 
 
 @directors_router.get(

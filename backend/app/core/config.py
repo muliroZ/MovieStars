@@ -1,5 +1,6 @@
 from functools import lru_cache
 
+from pydantic import PositiveInt
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -15,6 +16,10 @@ class Settings(BaseSettings):
     database_url: str = "sqlite+aiosqlite:///./moviestars.db"
     backend_cors_origins: list[str] = ["http://localhost:5173"]
     log_level: str = "INFO"
+    # Cache das consultas do catálogo e dos gêneros (feature 101, plan DEC-7).
+    cache_enabled: bool = True
+    cache_ttl_seconds: PositiveInt = 300
+    cache_max_entries: PositiveInt = 256
 
 
 @lru_cache

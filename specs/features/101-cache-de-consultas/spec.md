@@ -2,7 +2,7 @@
 
 | Campo          | Valor                                                  |
 |----------------|--------------------------------------------------------|
-| Status         | Aprovada                                               |
+| Status         | Concluída                                              |
 | Depende de     | 100 (filtros e ordenação); 003 e 004 (as alterações que invalidam o cache) |
 | Bloqueia       | —                                                      |
 | Referências    | `specs/constitution.md` (seções 1, 4.2, 6); spec 100 (D-10); plan 100 (Riscos) |

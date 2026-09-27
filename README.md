@@ -47,6 +47,32 @@ cp .env.example .env
 O banco é o arquivo `backend/moviestars.db`, definido por `DATABASE_URL` no
 `.env`. Depois da carga, ele ocupa cerca de 550 MB e não é versionado.
 
+#### Cache de consultas
+
+A API guarda em memória, por até 5 minutos, as respostas do catálogo
+(`GET /movies`, com busca, filtros e ordenação) e da lista de gêneros
+(`GET /genres`). Uma consulta repetida, como a última página ordenada pela
+média, cai de cerca de 400 ms para menos de 2 ms.
+
+- Cadastrar, editar ou remover um filme, ou adicionar uma avaliação, esvazia
+  o cache inteiro: a próxima consulta já mostra o dado novo.
+- Alterações feitas fora da API (a carga dos CSVs, SQL direto no banco,
+  migrações de dados) só aparecem quando o cache expira, ou ao reiniciar a
+  API.
+- As respostas das duas rotas trazem o cabeçalho `X-Cache`: `HIT` (veio do
+  cache), `MISS` (calculada agora) ou `BYPASS` (cache desligado). Ele aparece
+  na aba Rede das ferramentas do navegador.
+- O cache fica na memória do processo: rode a API com um único worker (o
+  padrão do `uvicorn`); não use `--workers` maior que 1.
+
+| Variável            | Padrão | O que faz                                   |
+|---------------------|--------|---------------------------------------------|
+| `CACHE_ENABLED`     | `true` | Liga ou desliga o cache                     |
+| `CACHE_TTL_SECONDS` | `300`  | Tempo, em segundos, que cada resposta vale  |
+| `CACHE_MAX_ENTRIES` | `256`  | Respostas guardadas; ao passar do limite, sai a menos usada |
+
+As variáveis são opcionais: sem elas no `.env`, valem os padrões.
+
 Testes e lint:
 
 ```bash
@@ -144,6 +170,7 @@ implementação, com revisão ao final de cada etapa.
 | 003 — Gerenciar filmes    | Concluída       |
 | 004 — Avaliações          | Concluída       |
 | 100 — Filtros do catálogo | Concluída       |
+| 101 — Cache de consultas  | Concluída       |
 
 ## Decisões
 
@@ -311,3 +338,22 @@ Resumo; o texto completo está na seção 4 da
   (`movie_reviews (sk_movie_id, nota)` e `bridge_movie_genre (sk_genre_id,
   sk_movie_id)`), e a página ordena as chaves antes de carregar os filmes. O
   pior caso medido foi 456 ms.
+
+### Cache de consultas (feature 101)
+
+- **Onde:** só no backend, na memória do processo, sem serviço externo nem
+  biblioteca nova (uma classe pequena em `backend/app/core/cache.py`). Redis,
+  `cachetools` e cache no frontend foram descartados.
+- **O que é guardado:** as respostas de `GET /movies` e `GET /genres`.
+  Detalhes, avaliações e diretores já são rápidos e ficam de fora.
+- **Consultas iguais:** a chave vem dos parâmetros já validados, sem importar
+  a ordem dos gêneros e dos status; requisições inválidas (422) nunca são
+  guardadas.
+- **Tudo é descartado a cada alteração:** uma avaliação nova muda a média de
+  qualquer página filtrada ou ordenada por ela, e um filme novo desloca a
+  paginação de todas as consultas. Descartar só o afetado seria mais
+  complexo e fácil de errar.
+- **Sem resultado velho:** uma consulta que começou antes de uma alteração e
+  terminou depois dela não guarda o seu resultado (contador de geração).
+- **Expiração de 5 minutos e limite de 256 respostas:** a expiração cobre as
+  alterações feitas fora da API.
