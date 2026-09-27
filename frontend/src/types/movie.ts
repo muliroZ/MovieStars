@@ -80,3 +80,10 @@ export interface MovieInput {
   /** Nomes dos diretores; nome exato existente é reaproveitado, os outros são criados. */
   diretores: string[]
 }
+
+/** Espelha `ReviewInput` do backend: nova avaliação em estrelas inteiras de 1 a 5. */
+export interface ReviewInput {
+  nome: string
+  estrelas: number
+  comentario: string
+}

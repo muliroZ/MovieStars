@@ -5,10 +5,18 @@ from fastapi.exceptions import RequestValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
-from app.movies.schemas import MovieDetail, MovieInput, MovieListItem, Page, ReviewItem
+from app.movies.schemas import (
+    MovieDetail,
+    MovieInput,
+    MovieListItem,
+    Page,
+    ReviewInput,
+    ReviewItem,
+)
 from app.movies.service import (
     UnknownGenresError,
     create_movie,
+    create_review,
     delete_movie,
     get_movie,
     list_genres,
@@ -141,3 +149,19 @@ async def remove_movie(sk_movie_id: str, db: AsyncSession = Depends(get_db)) -> 
     if not await delete_movie(db, sk_movie_id):
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail=MOVIE_NOT_FOUND)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.post(
+    "/{sk_movie_id}/reviews",
+    status_code=status.HTTP_201_CREATED,
+    response_model=ReviewItem,
+    summary="Adiciona uma avaliação (1 a 5 estrelas) a um filme",
+    responses={404: {"description": MOVIE_NOT_FOUND}},
+)
+async def post_review(
+    sk_movie_id: str, data: ReviewInput, db: AsyncSession = Depends(get_db)
+) -> ReviewItem:
+    review = await create_review(db, sk_movie_id, data)
+    if review is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail=MOVIE_NOT_FOUND)
+    return review

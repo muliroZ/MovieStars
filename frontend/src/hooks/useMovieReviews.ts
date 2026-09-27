@@ -22,6 +22,8 @@ export interface ReviewsResult {
   loadMoreError: string | null
   retry: () => void
   loadMore: () => void
+  /** Recarrega as 10 mais recentes sem passar por "carregando" (spec 004, D-5). */
+  reload: () => void
 }
 
 /** Avaliações de um filme: primeira página ao abrir e "mostrar mais" acumulando as próximas. */
@@ -80,6 +82,18 @@ export function useMovieReviews(skMovieId: string): ReviewsResult {
       })
   }
 
+  function reload() {
+    listMovieReviews(skMovieId, { page: 1 })
+      .then((data) => {
+        // Substitui a lista (desfaz o "Mostrar mais"); a chave evita misturar filmes.
+        setLoaded({ key: requestKey, items: data.items, total: data.total, page: 1, pages: data.pages })
+        setMore(null)
+      })
+      .catch(() => {
+        // Falhou: a lista que já está na tela continua.
+      })
+  }
+
   return {
     status: current ? 'success' : error ? 'error' : 'loading',
     message: error,
@@ -90,5 +104,6 @@ export function useMovieReviews(skMovieId: string): ReviewsResult {
     loadMoreError: moreState?.error ?? null,
     retry: () => setAttempt((value) => value + 1),
     loadMore,
+    reload,
   }
 }

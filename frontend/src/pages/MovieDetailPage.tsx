@@ -10,6 +10,7 @@ import FinancialTable from '../components/FinancialTable'
 import LoadingState from '../components/LoadingState'
 import NameList from '../components/NameList'
 import Poster from '../components/Poster'
+import ReviewForm from '../components/ReviewForm'
 import ReviewList from '../components/ReviewList'
 import StarRating from '../components/StarRating'
 import { useFlash } from '../hooks/useFlash'
@@ -67,6 +68,11 @@ function MovieDetailPage() {
           movie={movie.data}
           reviews={reviews}
           catalogState={location.state}
+          // Avaliação nova: média do topo e lista atualizam sem voltar a "carregando" (DEC-5).
+          onReviewCreated={() => {
+            movie.refresh()
+            reviews.reload()
+          }}
         />
       )}
     </div>
@@ -78,9 +84,10 @@ interface MovieContentProps {
   reviews: ReviewsResult
   /** Estado da navegação, repassado para editar e para voltar ao catálogo. */
   catalogState: unknown
+  onReviewCreated: () => void
 }
 
-function MovieContent({ movie, reviews, catalogState }: MovieContentProps) {
+function MovieContent({ movie, reviews, catalogState, onReviewCreated }: MovieContentProps) {
   const navigate = useNavigate()
   const { showFlash } = useFlash()
   const catalogSearch = catalogSearchFrom(catalogState)
@@ -176,7 +183,10 @@ function MovieContent({ movie, reviews, catalogState }: MovieContentProps) {
       </section>
 
       <div className="movie-detail__section">
-        <ReviewList reviews={reviews} />
+        <ReviewList
+          reviews={reviews}
+          form={<ReviewForm skMovieId={movie.sk_movie_id} onCreated={onReviewCreated} />}
+        />
       </div>
 
       <ConfirmDialog

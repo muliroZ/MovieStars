@@ -18,6 +18,7 @@ from app.movies.schemas import (
     MovieInput,
     MovieListItem,
     Page,
+    ReviewInput,
     ReviewItem,
 )
 
@@ -86,6 +87,15 @@ def _to_stars(nota: float | None) -> float | None:
     """
 
     return None if nota is None else round(nota / 2, 1)
+
+
+def _to_nota(estrelas: int) -> float:
+    """Converte estrelas (1–5) em nota do banco (0–10): a outra metade de `_to_stars`.
+
+    As duas funções são as únicas conversões de escala (constituição, seção 4.1).
+    """
+
+    return float(estrelas * 2)
 
 
 def _to_list_item(movie: DimMovie, rating: tuple[float, int] | None) -> MovieListItem:
@@ -375,3 +385,28 @@ async def _directors_by_name(db: AsyncSession, names: list[str]) -> list[DimPers
     return [
         existing.get(name) or DimPerson(nome_pessoa=name, tipo_pessoa="Diretor") for name in names
     ]
+
+
+async def create_review(db: AsyncSession, sk_movie_id: str, data: ReviewInput) -> ReviewItem | None:
+    """Grava uma avaliação nova; None se o filme não existe (a rota responde 404).
+
+    O resumo `dim_reviews` não é atualizado: a média vem sempre do AVG das
+    avaliações individuais (constituição, seção 4.2).
+    """
+
+    movie_exists = await db.scalar(
+        select(DimMovie.sk_movie_id).where(DimMovie.sk_movie_id == sk_movie_id)
+    )
+    if movie_exists is None:
+        return None
+
+    review = MovieReview(
+        sk_movie_id=sk_movie_id,
+        nome=data.nome,
+        nota=_to_nota(data.estrelas),
+        comentario=data.comentario,
+    )
+    db.add(review)
+    await db.commit()
+    await db.refresh(review)  # lê o created_at preenchido pelo banco
+    return _to_review_item(review)

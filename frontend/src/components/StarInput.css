@@ -1,0 +1,43 @@
+.star-input {
+  display: inline-flex;
+  gap: 0.15rem;
+  align-self: flex-start;
+  padding: 0.1rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+}
+
+.star-input--invalid {
+  border-color: var(--color-danger);
+}
+
+/* Área de toque de 44 px por estrela (CA-15). */
+.star-input__star {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  font-size: 2rem;
+  line-height: 1;
+  color: var(--color-star-empty);
+  cursor: pointer;
+  border-radius: var(--radius);
+  transition: color 0.1s;
+}
+
+.star-input__star--on {
+  color: var(--color-star);
+}
+
+.star-input__radio {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.star-input__star:focus-within {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
+}

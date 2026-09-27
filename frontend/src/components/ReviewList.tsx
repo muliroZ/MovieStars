@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react'
+
 import type { ReviewsResult } from '../hooks/useMovieReviews'
 import { formatDateTime } from '../utils/format'
 import ErrorState from './ErrorState'
@@ -7,15 +9,18 @@ import './ReviewList.css'
 
 interface ReviewListProps {
   reviews: ReviewsResult
+  /** Conteúdo entre o título e a lista, ex.: o formulário de nova avaliação (spec 004, DEC-6). */
+  form?: ReactNode
 }
 
 /** Avaliações do filme, 10 por vez, com "Mostrar mais" (CA-17 a CA-22). */
-function ReviewList({ reviews }: ReviewListProps) {
+function ReviewList({ reviews, form }: ReviewListProps) {
   const title = reviews.status === 'success' ? `Avaliações (${reviews.total})` : 'Avaliações'
 
   return (
     <section className="review-list" aria-label="Avaliações">
       <h2 className="review-list__title">{title}</h2>
+      {form}
 
       {reviews.status === 'loading' && <LoadingState message="Carregando avaliações…" />}
       {reviews.status === 'error' && (

@@ -139,3 +139,19 @@ class MovieInput(BaseModel):
         """Remove repetidos mantendo a ordem (CA-18)."""
 
         return list(dict.fromkeys(values))
+
+
+ReviewerName = Annotated[
+    str, StringConstraints(strip_whitespace=True, min_length=1, max_length=120)
+]
+ReviewComment = Annotated[
+    str, StringConstraints(strip_whitespace=True, min_length=1, max_length=1000)
+]
+
+
+class ReviewInput(BaseModel):
+    """Nova avaliação: nota em estrelas inteiras de 1 a 5 (constituição, seção 4.1)."""
+
+    nome: ReviewerName
+    estrelas: int = Field(ge=1, le=5)
+    comentario: ReviewComment

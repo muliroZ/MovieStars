@@ -140,7 +140,7 @@ implementação, com revisão ao final de cada etapa.
 | 001 — Catálogo e busca    | Concluída       |
 | 002 — Detalhes e média    | Concluída       |
 | 003 — Gerenciar filmes    | Concluída       |
-| 004 — Avaliações          | Não iniciada    |
+| 004 — Avaliações          | Concluída       |
 
 ## Decisões
 
@@ -252,3 +252,23 @@ Resumo; o texto completo está na seção 4 da
   Pessoas, gêneros e produtoras continuam cadastrados.
 - **Mensagens de sucesso** ("Filme cadastrado.", "Filme atualizado.", "Filme
   excluído.") aparecem no topo e somem em 5 s.
+
+### Adicionar avaliações (feature 004)
+
+- **Onde:** formulário "Adicionar avaliação" na seção de avaliações da
+  página de detalhes, acima da lista.
+- **Campos:** nome de quem avalia (até 120 caracteres), nota de 1 a 5
+  estrelas inteiras e comentário (até 1.000 caracteres, com contador). Todos
+  obrigatórios; a mesma pessoa pode avaliar o mesmo filme mais de uma vez.
+- **Escala:** a nota é gravada como `estrelas × 2` (4 estrelas → 8) e exibida
+  de volta em estrelas. As duas conversões ficam só no backend.
+- **API:** `POST /api/v1/movies/{sk_movie_id}/reviews` (201), com as mesmas
+  validações e mensagens em português do formulário; `404` para filme
+  inexistente. Qualquer filme aceita avaliações, inclusive os não lançados.
+- **Depois de enviar:** a avaliação aparece no topo da lista (que volta às 10
+  mais recentes), o total e a média do topo da página atualizam sem a página
+  recarregar, e aparece "Avaliação adicionada.".
+- **Limitações aceitas:** o resumo `dim_reviews` não é atualizado (a média
+  vem sempre das avaliações individuais); a data de criação tem precisão de
+  1 segundo, então duas avaliações do mesmo filme criadas no mesmo segundo
+  podem aparecer fora de ordem.

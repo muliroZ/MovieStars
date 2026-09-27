@@ -101,6 +101,9 @@ bun run lint
   mensagens de sucesso com `useFlash()` / `FlashProvider`.
 - `backend/app/core/errors.py`: tradução das mensagens de validação (422)
   para o português.
+- Avaliações (feature 004): `frontend/src/utils/reviewForm.ts` (validação,
+  espelho do `ReviewInput`), `StarInput` (estrelas como botões de opção
+  nativos) e `ReviewForm`, que entra no `ReviewList` pela propriedade `form`.
 - `specs/`: constituição e features.
 - `data/bases_atv_dev1/` e `data/bases_atv_dev_2/`: CSVs de carga inicial
   (versionados). O banco `backend/moviestars.db` ocupa ~550 MB
@@ -147,6 +150,15 @@ bun run lint
   `frontend/src/utils/movieForm.ts`. Mudou uma, mude a outra.
 - **Mensagens de 422:** tipos novos de erro do Pydantic precisam de tradução
   em `core/errors.py` (senão caem em "Valor inválido.").
+- **Escala das notas:** `_to_nota` (estrelas → nota, ×2) e `_to_stars`
+  (nota → estrelas, ÷2) no `service.py` são as únicas conversões; não
+  converta em outro lugar.
+- **Atualizar sem piscar:** para refletir uma mudança na mesma tela, use
+  `useMovie().refresh()` e `useMovieReviews().reload()`; o `retry()` volta ao
+  estado "carregando" e desmonta a página (serve para telas de erro).
+- **`created_at` com precisão de 1 s:** avaliações criadas no mesmo segundo
+  empatam na ordem (desempate pela chave). Em testes, crie as avaliações
+  antigas com `created_at` explícito.
 
 ## Limites
 

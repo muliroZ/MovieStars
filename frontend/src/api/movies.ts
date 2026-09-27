@@ -1,4 +1,11 @@
-import type { MovieDetail, MovieInput, MovieListItem, Page, Review } from '../types/movie'
+import type {
+  MovieDetail,
+  MovieInput,
+  MovieListItem,
+  Page,
+  Review,
+  ReviewInput,
+} from '../types/movie'
 import { apiGet, apiSend } from './client'
 
 export interface ListMoviesParams {
@@ -61,4 +68,9 @@ export function listGenres(signal?: AbortSignal): Promise<string[]> {
 /** GET /directors: até 10 sugestões de diretores pelo nome. */
 export function searchDirectors(search: string, signal?: AbortSignal): Promise<string[]> {
   return apiGet<string[]>('/directors', { search }, signal)
+}
+
+/** POST /movies/{id}/reviews: grava uma avaliação e devolve como ela ficou. */
+export function createReview(skMovieId: string, input: ReviewInput): Promise<Review> {
+  return apiSend<Review>('POST', `/movies/${encodeURIComponent(skMovieId)}/reviews`, input)
 }
