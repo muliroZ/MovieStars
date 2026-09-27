@@ -25,18 +25,23 @@ async def list_movies(db: AsyncSession, page: int, page_size: int, search: str =
         filters.append(DimMovie.titulo_normalizado.contains(term, autoescape=True))
 
     total = await db.scalar(select(func.count()).select_from(DimMovie).where(*filters))
-    movies = await db.scalars(
-        select(DimMovie)
-        .where(*filters)
-        # O índice ix_dim_movies_ordem_catalogo cobre exatamente esta ordem.
-        .order_by(DimMovie.titulo_normalizado, DimMovie.ano_lancamento, DimMovie.sk_movie_id)
-        .offset((page - 1) * page_size)
-        .limit(page_size)
-        # Carrega gêneros e pessoas dos filmes da página em 2 consultas (sem N+1 e
-        # sem lazy load, que em código assíncrono gera MissingGreenlet).
-        .options(selectinload(DimMovie.genres), selectinload(DimMovie.people))
-    )
-    movies = movies.all()
+    offset = (page - 1) * page_size
+    movies: list[DimMovie] = []
+    # Página além da última: lista vazia sem consultar. Isso também evita estourar o
+    # limite de 64 bits do OFFSET do SQLite com páginas enormes (ex.: page=10**18).
+    if offset < total:
+        result = await db.scalars(
+            select(DimMovie)
+            .where(*filters)
+            # O índice ix_dim_movies_ordem_catalogo cobre exatamente esta ordem.
+            .order_by(DimMovie.titulo_normalizado, DimMovie.ano_lancamento, DimMovie.sk_movie_id)
+            .offset(offset)
+            .limit(page_size)
+            # Carrega gêneros e pessoas dos filmes da página em 2 consultas (sem N+1 e
+            # sem lazy load, que em código assíncrono gera MissingGreenlet).
+            .options(selectinload(DimMovie.genres), selectinload(DimMovie.people))
+        )
+        movies = list(result.all())
     ratings = await _ratings_by_movie(db, [movie.sk_movie_id for movie in movies])
 
     return MoviePage(

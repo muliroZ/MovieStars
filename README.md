@@ -12,7 +12,7 @@ cadastra, edita e remove filmes e adiciona avaliações (1 a 5 estrelas).
 
 - **Backend:** Python 3.11+, FastAPI, Pydantic v2, SQLAlchemy 2.0 assíncrono,
   Alembic, SQLite.
-- **Frontend:** Vite, React, TypeScript.
+- **Frontend:** Vite, React, TypeScript (modo `strict`), React Router.
 
 Detalhes e justificativas: [`specs/constitution.md`](specs/constitution.md).
 
@@ -56,11 +56,36 @@ Testes e lint:
 
 ### Frontend
 
+Com a API rodando (seção anterior), em outro terminal:
+
 ```bash
 cd frontend
-bun install
+bun install     # instala também o react-router-dom
 bun run dev     # http://localhost:5173
 ```
+
+O frontend procura a API em `http://localhost:8000/api/v1`. Para usar outro
+endereço, crie `frontend/.env.local` com `VITE_API_URL=<endereço>`.
+
+Checagem de tipos, build e lint:
+
+```bash
+bun run build
+bun run lint
+```
+
+### Depois de atualizar o repositório
+
+Se novas migrações chegarem (por exemplo, a `0002_titulo_normalizado` da
+feature 001), aplique-as antes de subir a API:
+
+```bash
+cd backend
+.venv/bin/alembic upgrade head
+```
+
+A carga não precisa ser refeita: a migração preenche os filmes que já estão
+no banco.
 
 ## Dados
 
@@ -111,7 +136,7 @@ implementação, com revisão ao final de cada etapa.
 | Feature                   | Status          |
 |---------------------------|-----------------|
 | 000 — Carga de dados      | Concluída       |
-| 001 — Catálogo e busca    | Plan aprovado   |
+| 001 — Catálogo e busca    | Concluída       |
 | 002 — Detalhes e média    | Não iniciada    |
 | 003 — Gerenciar filmes    | Não iniciada    |
 | 004 — Avaliações          | Não iniciada    |
@@ -150,3 +175,25 @@ Resumo; o texto completo está na seção 4 da
   são conferidas em Python. Assim, uma linha inválida é descartada sem
   abortar a transação inteira.
 - **Nome do banco:** `moviestars.db` (constituição, seção 8).
+
+### Catálogo e busca (feature 001)
+
+- **Tela inicial:** catálogo paginado (20 por página) com busca pelo título.
+  Página e busca ficam na URL, então recarregar, compartilhar e usar o
+  voltar do navegador funcionam.
+- **Cartão:** pôster (ou imagem padrão), título, ano, média em estrelas com
+  a quantidade de avaliações, até 3 gêneros ("+N") e até 2 diretores ("e
+  mais N"). Quando falta uma informação, o cartão mostra um texto como "Sem
+  gênero".
+- **Busca e ordem sem acentos:** "acao" encontra "Ação", e "À La Recherche"
+  fica junto dos títulos com "A". Para isso, `dim_movies` ganhou a coluna
+  `titulo_normalizado` (migração 0002), com índice. Cada página responde em
+  menos de 40 ms com o catálogo completo.
+- **Busca literal:** `%` e `_` são tratados como texto comum.
+- **Títulos com aspas extras:** 55 títulos vêm com o defeito de aspas da
+  origem e aparecem no início da lista. O tratamento ficou para depois das
+  funcionalidades principais.
+- **Paginação:** primeira, anterior, próxima e última, com "Página X de Y".
+  Em telas estreitas, os botões mostram só os símbolos.
+- **Responsivo:** a partir de 360 px. O cabeçalho com a busca fica fixo no
+  topo só em telas largas.

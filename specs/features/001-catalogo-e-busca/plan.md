@@ -2,7 +2,7 @@
 
 | Campo       | Valor                                                 |
 |-------------|-------------------------------------------------------|
-| Status      | Aprovado                                              |
+| Status      | Concluído                                             |
 | Spec        | [`spec.md`](spec.md) (aprovada)                       |
 | Referências | `specs/constitution.md` (seções 3, 4.1, 4.2, 4.6, 5, 6) |
 

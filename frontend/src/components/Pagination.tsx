@@ -17,16 +17,18 @@ function Pagination({ page, pages, onChange }: PaginationProps) {
         className="pagination__button"
         onClick={() => onChange(1)}
         disabled={isFirst}
+        aria-label="Primeira página"
       >
-        « Primeira
+        « <span className="pagination__label">Primeira</span>
       </button>
       <button
         type="button"
         className="pagination__button"
         onClick={() => onChange(page - 1)}
         disabled={isFirst}
+        aria-label="Página anterior"
       >
-        ‹ Anterior
+        ‹ <span className="pagination__label">Anterior</span>
       </button>
       <span className="pagination__status" aria-current="page">
         Página {page.toLocaleString('pt-BR')} de {pages.toLocaleString('pt-BR')}
@@ -36,16 +38,18 @@ function Pagination({ page, pages, onChange }: PaginationProps) {
         className="pagination__button"
         onClick={() => onChange(page + 1)}
         disabled={isLast}
+        aria-label="Próxima página"
       >
-        Próxima ›
+        <span className="pagination__label">Próxima</span> ›
       </button>
       <button
         type="button"
         className="pagination__button"
         onClick={() => onChange(pages)}
         disabled={isLast}
+        aria-label="Última página"
       >
-        Última »
+        <span className="pagination__label">Última</span> »
       </button>
     </nav>
   )

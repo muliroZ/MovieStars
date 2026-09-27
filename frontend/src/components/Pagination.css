@@ -27,3 +27,10 @@
   color: var(--color-text-muted);
   white-space: nowrap;
 }
+
+/* Telas estreitas: só os símbolos, para caber numa linha (o nome acessível continua). */
+@media (max-width: 479px) {
+  .pagination__label {
+    display: none;
+  }
+}

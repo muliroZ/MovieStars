@@ -2,7 +2,7 @@
 
 | Campo  | Valor                                                   |
 |--------|---------------------------------------------------------|
-| Status | Aprovado — em implementação                             |
+| Status | Concluído (2026-09-26)                                  |
 | Spec   | [`spec.md`](spec.md) (aprovada)                         |
 | Plan   | [`plan.md`](plan.md) (aprovado)                         |
 
@@ -197,7 +197,7 @@ Quando uma task de frontend diz "build e lint passam", significa que
 
 ## Fase 4 — Tela do catálogo
 
-- [ ] **T-19. `CatalogPage`** (CA-1, CA-3, CA-5, CA-12, CA-15, CA-16, CA-18, CA-19, CA-20, CA-23, CA-24)
+- [x] **T-19. `CatalogPage`** (CA-1, CA-3, CA-5, CA-12, CA-15, CA-16, CA-18, CA-19, CA-20, CA-23, CA-24)
   - Lê `page` (inválido vale 1) e `search` da URL, e grava sem os valores
     padrão.
   - O campo de busca tem estado local; o valor com debounce vai para a URL
@@ -217,7 +217,7 @@ Quando uma task de frontend diz "build e lint passam", significa que
   - Verificação: build e lint passam; com a API e o `moviestars.db` reais,
     os CAs listados funcionam no navegador.
 
-- [ ] **T-20. Layout responsivo** (CA-27)
+- [x] **T-20. Layout responsivo** (CA-27)
   - Grade com colunas automáticas; cabeçalho com a busca; paginação que
     quebra linha em telas estreitas.
   - Verificação: em 360 px, 768 px e 1280 px, sem rolagem horizontal e com
@@ -225,7 +225,7 @@ Quando uma task de frontend diz "build e lint passam", significa que
 
 ## Fase 5 — Verificação e fechamento
 
-- [ ] **T-21. Roteiro manual no navegador** (CA-1 a CA-24, CA-27)
+- [x] **T-21. Roteiro manual no navegador** (CA-1 a CA-24, CA-27)
   - Percorrer cada CA da interface com os dados reais e anotar o resultado
     aqui. O roteiro inclui:
     - primeira, anterior, próxima e última página;
@@ -240,8 +240,35 @@ Quando uma task de frontend diz "build e lint passam", significa que
     - clique no cartão.
   - Verificação: todos os itens do roteiro marcados como ok, com os
     problemas encontrados corrigidos antes de marcar.
+  - **Resultado (2026-09-26):** o roteiro foi automatizado com Playwright
+    (instalado num ambiente temporário no scratchpad, fora das dependências
+    do projeto) e rodado contra a API e o `moviestars.db` reais. **42 de 42
+    verificações ok.**
 
-- [ ] **T-22. Documentação** (constituição, seção 6)
+    | Área | O que foi conferido | CAs |
+    |---|---|---|
+    | Listagem | 20 cartões; "95.645 filmes"; "Página 1 de 4.783"; limites desabilitados; última página com 5 filmes | CA-1, CA-3, CA-4 |
+    | Ordem | 5 amostras de 100 filmes em ordem normalizada; "À La Recherche…" junto dos "A…" | CA-2 |
+    | Cartões | 65 cartões (páginas 1, 300, 2.400 e 4.783) iguais à API: título, ano, estrelas, gêneros ("+N"), diretores ("e mais N"), pôster ou imagem padrão, link | CA-6, CA-7 |
+    | Título longo | no máximo 2 linhas, com o texto completo no `title` | CA-8 |
+    | Clique | leva a `/filmes/<chave>` ("Página não encontrada" até a 002) | CA-9 |
+    | Busca | "ring" com 514 resultados, todos com "ring"; `acao`, `AÇÃO` e `Ação` com o mesmo total; espaços ignorados; "100%" literal; resumo "514 filmes encontrados para "ring"" | CA-10 a CA-13, CA-15 |
+    | Debounce | "ring" digitado letra a letra gera uma única requisição | CA-14, RNF-2 |
+    | URL | busca volta à página 1; recarregar mantém busca e página; voltar restaura a página e o texto do campo; limpar volta a `/` | CA-16 a CA-19 |
+    | URL inválida | `?page=abc` e `?page=0` viram página 1; `?page=99999` mostra "Esta página não existe" com link | CA-20, CA-24 |
+    | Estados | carregando (API com atraso); erro com a API bloqueada e "Tentar novamente"; busca sem resultado com "Limpar busca" | CA-21 a CA-23 |
+    | Campo | não aceita o 201º caractere | CA-26 |
+    | Layout | 360 px (2 colunas), 768 px (4) e 1280 px (6) sem rolagem horizontal; paginação numa linha em 360 px; cabeçalho fixo só a partir de 768 px | CA-27 |
+
+    Problemas encontrados e corrigidos durante a verificação:
+    - `?page=10¹⁸` causava erro 500 na API. O serviço agora não consulta
+      páginas além da última, e há um teste de regressão.
+    - A paginação quebrava em 3 linhas em 360 px. Abaixo de 480 px, os
+      botões passaram a mostrar só os símbolos.
+    - O cabeçalho fixo ocupava muito espaço em telas estreitas. Ele agora é
+      fixo só a partir de 768 px (pedido na revisão da fase 4).
+
+- [x] **T-22. Documentação** (constituição, seção 6)
   - `README.md`: decisões da 001, variável `VITE_API_URL`, passo
     `bun install` (que agora instala `react-router-dom`) e status da 001.
   - `CLAUDE.md`:
@@ -252,7 +279,7 @@ Quando uma task de frontend diz "build e lint passam", significa que
   - Verificação: seguir o README do zero, num banco novo, deixa o catálogo
     funcionando no navegador.
 
-- [ ] **T-23. Definição de pronto** (constituição, seção 6)
+- [x] **T-23. Definição de pronto** (constituição, seção 6)
   - Backend: `pytest`, `ruff check .` e `ruff format --check .` passam.
   - Frontend: `bun run build` e `bun run lint` passam.
   - CA-1 a CA-27 conferidos contra os testes, a T-09 e a T-21.

@@ -2,7 +2,7 @@
 
 | Campo          | Valor                                                  |
 |----------------|--------------------------------------------------------|
-| Status         | Aprovada                                               |
+| Status         | Concluída                                              |
 | Depende de     | 000 (catálogo carregado no banco)                      |
 | Bloqueia       | 002 (o cartão leva aos detalhes do filme)              |
 | Referências    | `specs/constitution.md` (seções 1, 4.1, 4.2, 4.3, 4.6, 5.3) |

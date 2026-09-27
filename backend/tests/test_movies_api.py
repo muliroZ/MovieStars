@@ -247,3 +247,15 @@ async def test_get_movies_accepts_search_with_200_characters(client: AsyncClient
 
     assert response.status_code == 200
     assert response.json()["total"] == 0
+
+
+async def test_get_movies_with_huge_page_returns_empty_page(
+    client: AsyncClient, session: AsyncSession
+) -> None:
+    await add_movie(session, "Rings")
+
+    response = await client.get("/api/v1/movies", params={"page": 10**18})
+
+    assert response.status_code == 200
+    assert response.json()["items"] == []
+    assert response.json()["total"] == 1

@@ -48,7 +48,7 @@ Regras:
 python3 -m venv .venv
 .venv/bin/pip install -e ".[dev]"
 cp .env.example .env
-.venv/bin/alembic upgrade head          # cria/atualiza as tabelas
+.venv/bin/alembic upgrade head          # cria/atualiza as tabelas (rode após cada git pull)
 .venv/bin/python -m app.movies.load_data          # carga dos CSVs (~35 s; repetível)
 .venv/bin/python -m app.movies.load_data --reset  # apaga e recarrega tudo
 .venv/bin/uvicorn app.main:app --reload # API em http://localhost:8000/docs
@@ -76,10 +76,15 @@ bun run lint
 - `backend/app/api/v1/router.py`: registro dos routers.
 - `backend/app/movies/load_data.py`: carga dos CSVs (feature 000), script
   síncrono executado com `python -m`.
+- `backend/app/movies/normalization.py`: `normalize_title` (sem acentos e
+  maiúsculas), usado na busca e na ordem do catálogo (feature 001).
+- `backend/tests/conftest.py`: fixtures `session` e `client` sobre um SQLite
+  temporário; reutilize nos testes de novos endpoints.
 - `backend/app/db/session.py`: engine e `get_db`.
 - `backend/migrations/versions/`: revisões Alembic.
 - `frontend/src/{api,types,pages,components,hooks}/`: ver constituição,
-  seção 5.3.
+  seção 5.3. `api/client.ts` é o único lugar com `fetch`; cada componente
+  tem seu `.css` ao lado; variáveis de cor em `src/index.css`.
 - `specs/`: constituição e features.
 - `data/bases_atv_dev1/` e `data/bases_atv_dev_2/`: CSVs de carga inicial
   (versionados). O banco `backend/moviestars.db` ocupa ~550 MB
@@ -98,6 +103,14 @@ bun run lint
 - **SQLite e chaves estrangeiras:** o `PRAGMA foreign_keys=ON` já é ativado
   em `session.py`; scripts que abrirem conexões próprias precisam ativá-lo
   também, ou o cascade não funciona.
+- **`titulo_normalizado`:** é preenchido sozinho só no **insert** (default do
+  SQLAlchemy). Ao **editar** `titulo`, atualize também
+  `titulo_normalizado = normalize_title(titulo)`, senão a busca e a ordem do
+  catálogo ficam erradas para aquele filme.
+- **Ordem da busca/catálogo:** use `titulo_normalizado, ano_lancamento,
+  sk_movie_id` (coberta pelo índice `ix_dim_movies_ordem_catalogo`).
+- **Títulos com aspas extras** (55) aparecem no início do catálogo: é uma
+  pendência adiada pelo desenvolvedor. Não corrija sem ele pedir.
 
 ## Limites
 

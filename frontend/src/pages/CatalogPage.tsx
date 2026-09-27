@@ -1,6 +1,5 @@
-// Provisório (T-14 a T-18): vitrine dos componentes com dados fixos.
-// A tela real do catálogo substitui este arquivo na T-19.
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 
 import EmptyState from '../components/EmptyState'
 import ErrorState from '../components/ErrorState'
@@ -8,65 +7,151 @@ import LoadingState from '../components/LoadingState'
 import MovieCard from '../components/MovieCard'
 import Pagination from '../components/Pagination'
 import SearchBar from '../components/SearchBar'
-import type { MovieListItem } from '../types/movie'
+import { useDebounce } from '../hooks/useDebounce'
+import { useMovies } from '../hooks/useMovies'
+import type { MovieListItem, Page } from '../types/movie'
 import './CatalogPage.css'
 
-const base: MovieListItem = {
-  sk_movie_id: 'x',
-  titulo: 'Rings',
-  ano_lancamento: 2017,
-  url_poster: 'https://image.tmdb.org/t/p/w500/yp4CDOVpVmNwiPoZKQeFCpW8CFo.jpg',
-  media_estrelas: 3.8,
-  qtd_avaliacoes: 12,
-  generos: ['Horror'],
-  diretores: ['F. Javier Gutiérrez'],
+const SEARCH_DEBOUNCE_MS = 300
+
+/** Página vinda da URL; qualquer valor que não seja inteiro ≥ 1 vale 1 (CA-20). */
+function parsePage(raw: string | null): number {
+  if (raw === null || !/^\d+$/.test(raw)) return 1
+  const page = Number(raw)
+  return Number.isSafeInteger(page) && page >= 1 ? page : 1
 }
 
-const samples: MovieListItem[] = [
-  { ...base, sk_movie_id: '1' },
-  {
-    ...base,
-    sk_movie_id: '2',
-    titulo: 'Muitos gêneros e diretores',
-    media_estrelas: 2.5,
-    qtd_avaliacoes: 1,
-    generos: ['Action', 'Adventure', 'Animation', 'Comedy', 'Crime', 'Drama', 'Family', 'Fantasy', 'History', 'Horror', 'Music'],
-    diretores: ['Ana Diretora', 'Beto Diretor', 'Caio Diretor'],
-  },
-  { ...base, sk_movie_id: '3', titulo: 'Sem pôster', url_poster: null, media_estrelas: 5, qtd_avaliacoes: 1234 },
-  { ...base, sk_movie_id: '4', titulo: 'Pôster quebrado', url_poster: 'https://exemplo.invalido/p.jpg', media_estrelas: 0 },
-  {
-    ...base,
-    sk_movie_id: '5',
-    titulo: 'Um título muito longo '.repeat(7).trim().slice(0, 151),
-    ano_lancamento: null,
-    media_estrelas: null,
-    qtd_avaliacoes: 0,
-    generos: [],
-    diretores: [],
-  },
-]
+/** Parâmetros da URL sem os valores padrão: `/` é a página 1 sem busca (CA-18). */
+function buildParams(page: number, search: string): URLSearchParams {
+  const params = new URLSearchParams()
+  if (search !== '') params.set('search', search)
+  if (page > 1) params.set('page', String(page))
+  return params
+}
 
 function CatalogPage() {
-  const [search, setSearch] = useState('ring')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const page = parsePage(searchParams.get('page'))
+  const search = (searchParams.get('search') ?? '').trim()
+  const movies = useMovies(page, search)
+
+  // O campo tem estado próprio (atualiza a cada tecla); a URL só muda após a pausa.
+  const [searchInput, setSearchInput] = useState(search)
+  // Se a URL mudar por fora (voltar/avançar do navegador), o campo acompanha.
+  const [syncedSearch, setSyncedSearch] = useState(search)
+  if (search !== syncedSearch) {
+    setSyncedSearch(search)
+    setSearchInput(search)
+  }
+
+  const debouncedInput = useDebounce(searchInput, SEARCH_DEBOUNCE_MS)
+  const lastDebounced = useRef(debouncedInput)
+  useEffect(() => {
+    // Só reage quando o texto digitado (após a pausa) muda, e não quando a URL muda
+    // pelo voltar do navegador; senão o voltar seria desfeito.
+    if (debouncedInput === lastDebounced.current) return
+    lastDebounced.current = debouncedInput
+    const term = debouncedInput.trim()
+    if (term !== search) {
+      setSearchParams(buildParams(1, term)) // nova busca volta para a página 1 (CA-16)
+    }
+  }, [debouncedInput, search, setSearchParams])
+
+  // Troca de página (inclusive pelo voltar do navegador): volta ao topo (CA-5).
+  useEffect(() => {
+    window.scrollTo({ top: 0 })
+  }, [page])
+
+  function handleSearchChange(value: string) {
+    setSearchInput(value)
+    if (value === '') setSearchParams(buildParams(1, '')) // limpar não espera a pausa
+  }
+
+  function goToPage(target: number) {
+    setSearchParams(buildParams(target, search))
+  }
 
   return (
-    <main style={{ padding: '1rem', display: 'grid', gap: '1.5rem' }}>
-      <SearchBar value={search} onChange={setSearch} />
-      <SearchBar value="" onChange={() => {}} />
+    <div className="catalog">
+      <header className="catalog__header">
+        <Link to="/" className="catalog__brand">
+          MovieStars
+        </Link>
+        <SearchBar value={searchInput} onChange={handleSearchChange} />
+      </header>
+
+      <main className="catalog__content">
+        {movies.status === 'loading' && <LoadingState />}
+        {movies.status === 'error' && (
+          <ErrorState message={movies.message} onRetry={movies.retry} />
+        )}
+        {movies.status === 'success' && (
+          <CatalogResults
+            data={movies.data}
+            search={search}
+            onClearSearch={() => handleSearchChange('')}
+            onPageChange={goToPage}
+          />
+        )}
+      </main>
+    </div>
+  )
+}
+
+interface CatalogResultsProps {
+  data: Page<MovieListItem>
+  search: string
+  onClearSearch: () => void
+  onPageChange: (page: number) => void
+}
+
+function CatalogResults({ data, search, onClearSearch, onPageChange }: CatalogResultsProps) {
+  if (data.total === 0 && search === '') {
+    return <EmptyState message="Nenhum filme cadastrado" />
+  }
+
+  if (data.total === 0) {
+    return (
+      <EmptyState
+        message={`Nenhum filme encontrado para "${search}"`}
+        action={
+          <button type="button" className="status-state__button" onClick={onClearSearch}>
+            Limpar busca
+          </button>
+        }
+      />
+    )
+  }
+
+  if (data.items.length === 0) {
+    return (
+      <EmptyState
+        message="Esta página não existe"
+        action={<Link to={`/?${buildParams(1, search)}`}>Ir para a página 1</Link>}
+      />
+    )
+  }
+
+  const total = data.total.toLocaleString('pt-BR')
+  const summary =
+    search === ''
+      ? `${total} ${data.total === 1 ? 'filme' : 'filmes'}`
+      : `${total} ${data.total === 1 ? 'filme encontrado' : 'filmes encontrados'} para "${search}"`
+
+  return (
+    <>
+      <p className="catalog__summary" aria-live="polite">
+        {summary}
+      </p>
       <ul className="movie-grid">
-        {samples.map((movie) => (
+        {data.items.map((movie) => (
           <li key={movie.sk_movie_id}>
             <MovieCard movie={movie} />
           </li>
         ))}
       </ul>
-      <Pagination page={3} pages={4783} onChange={() => {}} />
-      <Pagination page={1} pages={1} onChange={() => {}} />
-      <LoadingState />
-      <ErrorState message="Não foi possível carregar os filmes." onRetry={() => {}} />
-      <EmptyState message='Nenhum filme encontrado para "xyz"' action={<button>Limpar busca</button>} />
-    </main>
+      <Pagination page={data.page} pages={data.pages} onChange={onPageChange} />
+    </>
   )
 }
 
