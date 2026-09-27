@@ -321,6 +321,16 @@ como na 001, contra os dados reais:
 
 ## Riscos
 
+- **RNF-1: confirmado na T-05 (2026-09-26).** Pior tempo em 5 execuções
+  com o `moviestars.db` real:
+
+  | Consulta                                   | Tempo  |
+  |--------------------------------------------|--------|
+  | detalhe do filme com 88 diretores          | 51 ms  |
+  | detalhe do filme com 13 avaliações         | 4 ms   |
+  | avaliações p.1 e p.2 (13 avaliações)       | 4 ms e 2 ms |
+  | detalhe e avaliações de filme sem avaliações | 5 ms e 2 ms |
+
 - **Filmes criados pela 003 sem métricas:** `financeiro` pode ser `null`, e
   a interface mostra a seção com "Não informado". Coberto por teste.
 - **Imagens externas:** a imagem de fundo `w1280` pesa mais que o pôster. É

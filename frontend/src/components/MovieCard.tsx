@@ -1,11 +1,10 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 
 import type { MovieListItem } from '../types/movie'
+import Poster from './Poster'
 import StarRating from './StarRating'
 import './MovieCard.css'
 
-const POSTER_PLACEHOLDER = '/poster-placeholder.svg'
 const MAX_GENRES = 3
 const MAX_DIRECTORS = 2
 
@@ -14,18 +13,19 @@ interface MovieCardProps {
 }
 
 function MovieCard({ movie }: MovieCardProps) {
-  // Pôster ausente ou que falhou ao carregar (URL quebrada, sem internet) → imagem padrão.
-  const [posterFailed, setPosterFailed] = useState(false)
-  const poster = movie.url_poster && !posterFailed ? movie.url_poster : POSTER_PLACEHOLDER
+  // A página de detalhes usa a busca atual para o "Voltar ao catálogo" (spec 002, CA-23).
+  const { search: catalogSearch } = useLocation()
 
   return (
-    <Link to={`/filmes/${movie.sk_movie_id}`} className="movie-card">
-      <img
+    <Link
+      to={`/filmes/${movie.sk_movie_id}`}
+      state={{ catalogSearch }}
+      className="movie-card"
+    >
+      <Poster
         className="movie-card__poster"
-        src={poster}
+        src={movie.url_poster}
         alt={`Pôster de ${movie.titulo}`}
-        loading="lazy"
-        onError={() => setPosterFailed(true)}
       />
       <div className="movie-card__body">
         <h2 className="movie-card__title" title={movie.titulo}>

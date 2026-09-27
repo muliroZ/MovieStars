@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 
-import { ApiError } from '../api/client'
+import { errorMessage } from '../api/client'
 import { listMovies } from '../api/movies'
 import type { MovieListItem, Page } from '../types/movie'
 
@@ -24,8 +24,7 @@ export function useMovies(page: number, search: string): MoviesState & { retry: 
       .then((data) => setResult({ key: requestKey, state: { status: 'success', data } }))
       .catch((error: unknown) => {
         if (controller.signal.aborted) return // trocou de página/busca: resposta velha
-        const message =
-          error instanceof ApiError ? error.message : 'Erro inesperado ao carregar os filmes.'
+        const message = errorMessage(error, 'Erro inesperado ao carregar os filmes.')
         setResult({ key: requestKey, state: { status: 'error', message } })
       })
 

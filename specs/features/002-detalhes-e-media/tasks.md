@@ -2,7 +2,7 @@
 
 | Campo  | Valor                                                   |
 |--------|---------------------------------------------------------|
-| Status | Em revisão                                              |
+| Status | Aprovado — em implementação                             |
 | Spec   | [`spec.md`](spec.md) (aprovada)                         |
 | Plan   | [`plan.md`](plan.md) (aprovado)                         |
 
@@ -14,13 +14,13 @@ ela passa. Os comandos de backend rodam em `backend/` e os de frontend em
 
 ## Fase 0 — API de detalhes e avaliações (backend)
 
-- [ ] **T-01. `Page[T]` genérico** (DEC-2)
+- [x] **T-01. `Page[T]` genérico** (DEC-2)
   - Em `schemas.py`, trocar `MoviePage` por `Page(BaseModel, Generic[T])`;
     `list_movies` e a rota `GET /movies` passam a usar `Page[MovieListItem]`.
   - Verificação: os testes da 001 passam sem alteração, inclusive o que
     compara o JSON completo de `GET /movies`; `ruff check .` passa.
 
-- [ ] **T-02. `get_movie` e schemas do detalhe** (CA-4, CA-5, CA-7, CA-8, CA-10 a CA-13, CA-15, CA-16)
+- [x] **T-02. `get_movie` e schemas do detalhe** (CA-4, CA-5, CA-7, CA-8, CA-10 a CA-13, CA-15, CA-16)
   - Criar os schemas `MovieFinancials` e `MovieDetail`.
   - Criar `get_movie` com `selectinload` de gêneros, pessoas, produtoras e
     métricas; listas separadas por tipo e em ordem alfabética; média por
@@ -37,7 +37,7 @@ ela passa. Os comandos de backend rodam em `backend/` e os de frontend em
     - chave inexistente devolve `None`.
   - Verificação: `pytest` passa.
 
-- [ ] **T-03. Rota `GET /api/v1/movies/{sk_movie_id}`** (CA-1, CA-2, CA-3, CA-16)
+- [x] **T-03. Rota `GET /api/v1/movies/{sk_movie_id}`** (CA-1, CA-2, CA-3, CA-16)
   - Rota com `response_model=MovieDetail` e 404 "Filme não encontrado.".
   - Testes pelo `client`:
     - JSON completo de um filme;
@@ -46,7 +46,7 @@ ela passa. Os comandos de backend rodam em `backend/` e os de frontend em
       o mesmo filme.
   - Verificação: `pytest` e `ruff check .` passam; `/docs` mostra a rota.
 
-- [ ] **T-04. Avaliações: `list_reviews` e `GET /movies/{sk_movie_id}/reviews`** (CA-3, CA-17 a CA-21)
+- [x] **T-04. Avaliações: `list_reviews` e `GET /movies/{sk_movie_id}/reviews`** (CA-3, CA-17 a CA-21)
   - Criar o schema `ReviewItem`, com `created_at` em UTC explícito.
   - Criar `list_reviews`, que devolve `None` se o filme não existe; ordem
     `created_at DESC, sk_movie_review_id ASC`; `estrelas = _to_stars(nota)`;
@@ -64,7 +64,7 @@ ela passa. Os comandos de backend rodam em `backend/` e os de frontend em
     - `page=0` e `page_size=101` dão 422.
   - Verificação: `pytest` e `ruff check .` passam.
 
-- [ ] **T-05. Desempenho com os dados reais** (RNF-1)
+- [x] **T-05. Desempenho com os dados reais** (RNF-1)
   - Medir `GET /movies/{id}` e `/reviews` no `moviestars.db` para:
     - o filme com 88 diretores;
     - o filme com 13 avaliações (páginas 1 e 2);
@@ -74,7 +74,7 @@ ela passa. Os comandos de backend rodam em `backend/` e os de frontend em
 
 ## Fase 1 — Base do frontend
 
-- [ ] **T-06. Pasta `utils/` e formatações** (CA-4, CA-11, CA-18, DEC-8)
+- [x] **T-06. Pasta `utils/` e formatações** (CA-4, CA-11, CA-18, DEC-8)
   - Constituição:
     - acrescentar `utils/` à tabela da seção 5.3;
     - registrar a alteração na seção 8.
@@ -90,12 +90,12 @@ ela passa. Os comandos de backend rodam em `backend/` e os de frontend em
     - `formatDateTime("2026-09-27T01:30:00Z")` mostra 26/09/2026 no fuso
       de São Paulo.
 
-- [ ] **T-07. Tipos e chamadas à API**
+- [x] **T-07. Tipos e chamadas à API**
   - `types/movie.ts`: `MovieDetail`, `MovieFinancials`, `Review`.
   - `api/movies.ts`: `getMovie` e `listMovieReviews`.
   - Verificação: build e lint passam, sem `any`.
 
-- [ ] **T-08. Hooks `useMovie` e `useMovieReviews`** (CA-3, CA-19, CA-22, CA-26, CA-27)
+- [x] **T-08. Hooks `useMovie` e `useMovieReviews`** (CA-3, CA-19, CA-22, CA-26, CA-27)
   - `useMovie(id)`:
     - estados `loading`, `error`, `not-found` (resposta 404) e `success`;
     - `retry()`;
@@ -108,7 +108,7 @@ ela passa. Os comandos de backend rodam em `backend/` e os de frontend em
     - `hasMore`.
   - Verificação: build e lint passam, sem avisos das regras de hooks.
 
-- [ ] **T-09. `Poster`, `StarRating` e estado no link do cartão** (CA-4, CA-18, CA-23, DEC-9, DEC-10)
+- [x] **T-09. `Poster`, `StarRating` e estado no link do cartão** (CA-4, CA-18, CA-23, DEC-9, DEC-10)
   - Extrair `Poster` do `MovieCard`, que passa a usá-lo.
   - `StarRating` com `count` opcional.
   - O `Link` do `MovieCard` passa `state={{ catalogSearch }}` com a busca e

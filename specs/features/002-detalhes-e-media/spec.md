@@ -82,7 +82,7 @@ falhas.
 - **CA-13** (H-1). O lucro só é exibido quando orçamento **e** receita
   existem. Caso contrário, aparece "Não calculado" (D-5).
 - **CA-14** (H-1). Lucro negativo aparece com sinal de menos e destacado
-  como prejuízo (ex.: "−R$ 7.500.000,00").
+  como prejuízo (ex.: "-R$ 7.500.000,00").
 
 ### Média geral
 
@@ -137,7 +137,7 @@ falhas.
 |------------------------------------------------------------|----------------------------------------------------------|
 | Chave inexistente ou com formato estranho na URL           | "Filme não encontrado" + link para o catálogo (CA-3).    |
 | Duração 0                                                  | "Duração não informada" (CA-5).                          |
-| Duração acima de 300 min (107 filmes)                      | Exibida como está (ex.: "13 h 19 min"; spec 000, D-4).   |
+| Duração acima de 300 min (107 filmes)                      | Exibida como está (ex.: 13.319 min → "221 h 59 min"; spec 000, D-4).   |
 | Filme com 88 diretores                                     | 10 nomes e "Mostrar todos (88)" (CA-9).                  |
 | Só orçamento conhecido (6.296 filmes)                      | Receita "Não informado"; lucro "Não calculado" (CA-13).  |
 | Nem orçamento nem receita (85.976 filmes)                  | Os três aparecem como "Não informado"/"Não calculado".   |

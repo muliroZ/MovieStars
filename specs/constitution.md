@@ -203,6 +203,7 @@ Estrutura em `frontend/src/`:
 | `pages/`       | Uma página por rota (`CatalogPage`, `MovieDetailPage` etc.).   |
 | `components/`  | Componentes reutilizáveis (`MovieCard`, `StarRating` etc.).    |
 | `hooks/`       | Hooks customizados (ex.: `useDebounce`).                       |
+| `utils/`       | Funções puras usadas por vários componentes (ex.: formatar data, duração e dinheiro). |
 
 Regras:
 
@@ -264,3 +265,4 @@ data e motivo, e specs afetadas são revisadas.
 |------------|--------------------|--------|
 | 2026-09-25 | Versão inicial     | —      |
 | 2026-09-26 | Banco renomeado de `rocketlab.db` para `moviestars.db` (seções 3 e 6) | Decisão do desenvolvedor: nome do projeto. Código e `.env.example` alinhados na feature 000. |
+| 2026-09-26 | Pasta `frontend/src/utils/` acrescentada à seção 5.3 | Formatações (data, duração, dinheiro) usadas por vários componentes na feature 002 (plan 002, DEC-8). |

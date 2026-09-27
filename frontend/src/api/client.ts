@@ -41,3 +41,8 @@ export async function apiGet<T>(
   }
   return (await response.json()) as T
 }
+
+/** Mensagem para mostrar ao usuário a partir de um erro qualquer. */
+export function errorMessage(error: unknown, fallback: string): string {
+  return error instanceof ApiError ? error.message : fallback
+}

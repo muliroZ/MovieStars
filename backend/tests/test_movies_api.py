@@ -1,38 +1,11 @@
-from uuid import uuid4
-
 import pytest
 from httpx import AsyncClient
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.movies.models import DimGenre, DimMovie, DimPerson, MovieReview
+from app.movies.models import DimGenre, DimMovie, DimPerson
 from app.movies.service import list_movies
-
-
-async def add_movie(
-    session: AsyncSession,
-    titulo: str,
-    ano: int | None = 2000,
-    *,
-    genres: list[DimGenre] | None = None,
-    people: list[DimPerson] | None = None,
-    notas: list[float] | None = None,
-) -> DimMovie:
-    """Insere um filme pelo ORM (a chave e o id_filme são gerados)."""
-
-    movie = DimMovie(
-        id_filme=uuid4().hex,
-        titulo=titulo,
-        ano_lancamento=ano,
-        genres=genres or [],
-        people=people or [],
-        reviews=[
-            MovieReview(nome="Ana", nota=nota, comentario="Comentário.") for nota in notas or []
-        ],
-    )
-    session.add(movie)
-    await session.commit()
-    return movie
+from tests.helpers import add_movie
 
 
 def titles(page) -> list[str]:
