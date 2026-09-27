@@ -2,7 +2,7 @@
 
 | Campo       | Valor                                                 |
 |-------------|-------------------------------------------------------|
-| Status      | Aprovado                                              |
+| Status      | Concluído                                             |
 | Spec        | [`spec.md`](spec.md) (aprovada)                       |
 | Referências | `specs/constitution.md` (seções 4.2, 4.6, 5); plans da 001 (DEC-1), 003 (DEC-3, DEC-8) e 004 |
 
@@ -89,9 +89,14 @@ Ordenação (`ORDER BY`, DEC-7):
 - **Total:** `COUNT(*)` com as mesmas condições. O agregado só entra na
   contagem quando um **filtro** precisa dele (`reviews=with`, `min_stars`);
   ordenar sozinho não custa nada na contagem.
-- **Página:** a mesma lógica da 001 (`offset < total`, senão lista vazia),
-  mais os `selectinload` e o `_ratings_by_movie` dos 20 filmes da página,
-  sem mudança.
+- **Página em duas etapas (DEC-15):**
+  1. seleciona só as **chaves** (`sk_movie_id`) com as condições, a ordem, o
+     `offset` e o `limit`;
+  2. carrega os filmes dessas chaves (com os `selectinload` de sempre) e os
+     devolve na ordem da etapa 1.
+
+  Continua valendo o `offset < total` da 001 (senão, lista vazia) e o
+  `_ratings_by_movie` dos 20 filmes da página.
 
 ### Migração `0004_indices_filtros.py` (DEC-8)
 
@@ -141,7 +146,7 @@ interface CatalogFilters {
 
 | Função                                   | O que faz                                                    | CAs |
 |------------------------------------------|--------------------------------------------------------------|-----|
-| `parseFilters(searchParams)`             | Lê da URL e ignora valores inválidos (status fora da lista, ano não numérico ou fora da faixa, estrelas fora de 1 a 5, sort desconhecido) | CA-20 |
+| `parseFilters(searchParams)`             | Lê da URL e ignora valores inválidos (status fora da lista, ano não numérico ou fora da faixa, estrelas fora de 1 a 5, sort desconhecido). Se o ano inicial for maior que o final, os dois anos são ignorados | CA-20 |
 | `writeFilters(params, filters)`          | Grava na URL sem os valores padrão (`/` continua limpo)      | CA-19 |
 | `activeFilterCount(filters)`             | Quantos filtros estão ativos, para "Filtros (N)" e "K filtros ativos"; a ordenação não conta | CA-1, CA-17 |
 | `filtersToApiParams(filters)`            | Parâmetros da API                                            | —   |
@@ -176,6 +181,21 @@ interface CatalogFilters {
 - **Histórico (CA-19):** cada mudança cria uma entrada. Os campos de ano só
   criam a entrada depois da espera. Quando o voltar do navegador muda a URL,
   os campos de ano acompanham (o mesmo padrão da busca na 001).
+- **Botões e opções desabilitados** (fase 3, 2026-09-27, aprovado pelo
+  desenvolvedor):
+  - "Qualquer um"/"Todos" enquanto nenhum gênero estiver marcado, porque o
+    modo só vai para a URL junto com algum gênero;
+  - "Limpar filtros" sem filtros ativos e "Qualquer nota" sem estrelas
+    escolhidas, para não criar entradas inúteis no histórico.
+- **Textos da interface** não definidos na spec: "Ordenar por" (seletor),
+  "Combinar gêneros" (chave dos gêneros), "De" e "Até" (anos) e "Mínimo de
+  estrelas".
+- **Gênero inexistente na URL** (fase 4, aprovado): a limpeza mantém a
+  página atual, porque não é uma escolha do usuário.
+- **Resumo no singular com um filtro:** " · 1 filtro ativo".
+- **Painel fechado fica escondido (`hidden`), sem sair da tela,** para que um
+  ano digitado não se perca durante a espera; abrir e fechar continua sem
+  mudar a lista (CA-2).
 
 ## Testes
 
@@ -278,8 +298,34 @@ Pela API, cada caso abaixo deve ficar abaixo de 1 s:
 - **DEC-13. O roteiro dos filtros roda no banco real (só leitura), e as
   regressões numa cópia,** porque os roteiros da 003 e da 004 gravam dados.
 - **DEC-14. Nenhuma dependência nova.**
+- **DEC-15. Página em duas etapas (chaves primeiro, filmes depois).** Na
+  T-07, a última página ordenada pela média levou 904 a 937 ms pela API:
+  dentro do RNF-1, mas com menos de 10% de margem. A ordenação carregava
+  todas as colunas de `dim_movies` (inclusive sinopses). Ordenando só as
+  chaves, o SQL desse caso caiu de 872 para 403 ms, com a mesma página.
+  Decisão tomada na implementação (fase 1, 2026-09-27), aprovada pelo
+  desenvolvedor.
+  *Descartado:* manter a consulta em uma etapa.
 
 ## Riscos
+
+- **RNF-1: confirmado na T-07 (2026-09-27),** pela API com o `moviestars.db`
+  (pior tempo em 5 execuções, já com a página em duas etapas da DEC-15):
+
+  | Consulta                                    | Tempo  |
+  |---------------------------------------------|--------|
+  | `sort=rating`, página 1 / última            | 186 / 376 ms |
+  | `sort=rating&reverse`, página 1 / última    | 190 / 448 ms |
+  | `sort=reviews`, última página               | 456 ms |
+  | `sort=year`, última página                  | 83 ms  |
+  | `min_stars=4`                               | 108 ms |
+  | 3 gêneros `any` / 2 gêneros `all`           | 123 / 53 ms |
+  | `reviews=without`                           | 39 ms  |
+  | tudo + busca                                | 249 ms |
+  | sem filtros (001), página 1 / última        | 7 / 36 ms |
+  | avaliações de um filme (002)                | 4 ms   |
+
+  Antes da DEC-15, a última página por média levava de 904 a 937 ms.
 
 - **Ordenar os 95.645 filmes pela média:** a medição do desenho deu cerca de
   490 ms no arquivo real sem o índice cobridor. Com o índice, a expectativa é

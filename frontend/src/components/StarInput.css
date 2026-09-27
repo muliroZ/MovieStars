@@ -41,3 +41,11 @@
   outline: 2px solid var(--color-accent);
   outline-offset: -2px;
 }
+
+.star-input--disabled {
+  opacity: 0.45;
+}
+
+.star-input--disabled .star-input__star {
+  cursor: not-allowed;
+}

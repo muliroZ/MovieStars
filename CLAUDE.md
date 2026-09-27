@@ -104,6 +104,11 @@ bun run lint
 - Avaliações (feature 004): `frontend/src/utils/reviewForm.ts` (validação,
   espelho do `ReviewInput`), `StarInput` (estrelas como botões de opção
   nativos) e `ReviewForm`, que entra no `ReviewList` pela propriedade `form`.
+- Filtros do catálogo (feature 100): `frontend/src/utils/catalogFilters.ts`
+  (leitura e gravação na URL, contagem, validação dos anos), `useGenres`,
+  `CatalogToolbar` (botão "Filtros", ordenação, "Inverter") e `FilterPanel`.
+  No backend, `CatalogFilters`/`CatalogQuery` em `schemas.py` e
+  `_filter_conditions`/`_order_by` em `service.py`.
 - `specs/`: constituição e features.
 - `data/bases_atv_dev1/` e `data/bases_atv_dev_2/`: CSVs de carga inicial
   (versionados). O banco `backend/moviestars.db` ocupa ~550 MB
@@ -159,6 +164,20 @@ bun run lint
 - **`created_at` com precisão de 1 s:** avaliações criadas no mesmo segundo
   empatam na ordem (desempate pela chave). Em testes, crie as avaliações
   antigas com `created_at` explícito.
+- **Agregado de avaliações só quando precisa:** `list_movies` junta a
+  subconsulta `_review_stats` só quando precisa: no total, com `reviews=with`
+  ou `min_stars` (`_filters_need_stats`); na página, também ao ordenar por
+  média ou quantidade (`_needs_stats`). "Sem avaliação" usa `NOT EXISTS`.
+  A página ordena as chaves primeiro e carrega os filmes depois (plan 100,
+  DEC-15). Não junte o agregado em toda consulta.
+- **`min_stars` usa a média arredondada** (`ROUND(AVG(nota) / 2, 1)`), a
+  mesma de `_to_stars`: um filme exibido com 4,0 entra em 4 estrelas.
+- **URL do catálogo carrega os filtros:** use `writeFilters`/`parseFilters`
+  (`catalogFilters.ts`) ao montar endereços do catálogo, senão os filtros se
+  perdem. Os nomes na URL são os mesmos da API.
+- **Índice de avaliações:** desde a migração 0004 é
+  `ix_movie_reviews_movie_nota (sk_movie_id, nota)`, que cobre a lista por
+  filme e o agregado; o antigo `ix_movie_reviews_sk_movie_id` não existe mais.
 
 ## Limites
 

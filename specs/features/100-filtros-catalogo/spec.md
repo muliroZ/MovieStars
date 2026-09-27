@@ -2,7 +2,7 @@
 
 | Campo          | Valor                                                  |
 |----------------|--------------------------------------------------------|
-| Status         | Aprovada                                               |
+| Status         | Concluída                                              |
 | Depende de     | 001 (catálogo e busca); usa componentes da 003 e da 004 |
 | Bloqueia       | —                                                      |
 | Referências    | `specs/constitution.md` (seções 1, 4.2, 4.6, 5.3); spec 001 |

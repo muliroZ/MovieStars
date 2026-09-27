@@ -16,7 +16,8 @@ export class ApiError extends Error {
   }
 }
 
-type QueryParams = Record<string, string | number | undefined>
+/** Parâmetros da URL; listas repetem a chave (`genre=Drama&genre=Horror`). */
+export type QueryParams = Record<string, string | number | boolean | string[] | undefined>
 
 interface RequestOptions {
   params?: QueryParams
@@ -27,7 +28,9 @@ interface RequestOptions {
 async function request<T>(method: string, path: string, options: RequestOptions): Promise<T> {
   const url = new URL(`${API_URL}${path}`)
   for (const [key, value] of Object.entries(options.params ?? {})) {
-    if (value !== undefined && value !== '') {
+    if (Array.isArray(value)) {
+      for (const item of value) url.searchParams.append(key, item)
+    } else if (value !== undefined && value !== '') {
       url.searchParams.set(key, String(value))
     }
   }

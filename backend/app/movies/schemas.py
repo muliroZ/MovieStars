@@ -155,3 +155,70 @@ class ReviewInput(BaseModel):
     nome: ReviewerName
     estrelas: int = Field(ge=1, le=5)
     comentario: ReviewComment
+
+
+GenreMode = Literal["any", "all"]
+ReviewsFilter = Literal["all", "with", "without"]
+SortField = Literal["title", "year", "rating", "reviews"]
+
+
+class CatalogFilters(BaseModel):
+    """Filtros e ordenação do catálogo (feature 100). Vazio/padrão = sem restrição."""
+
+    genre: list[str] = Field(default=[], description="Nome do gênero; pode repetir.")
+    genre_mode: GenreMode = Field(
+        default="any", description="any: qualquer um dos gêneros; all: todos eles."
+    )
+    year_min: int | None = Field(default=None, description="Ano inicial (inclusivo).")
+    year_max: int | None = Field(default=None, description="Ano final (inclusivo).")
+    status: list[MovieStatus] = Field(default=[], description="Status; pode repetir.")
+    reviews: ReviewsFilter = Field(
+        default="all", description="all, with (com avaliação) ou without (sem avaliação)."
+    )
+    min_stars: int | None = Field(
+        default=None, ge=1, le=5, description="Média exibida mínima, de 1 a 5 estrelas."
+    )
+    sort: SortField = Field(default="title", description="title, year, rating ou reviews.")
+    reverse: bool = Field(default=False, description="Inverte a direção padrão do campo.")
+
+    @field_validator("year_min")
+    @classmethod
+    def year_min_in_range(cls, value: int | None) -> int | None:
+        return _check_year_range(value)
+
+    @field_validator("year_max")
+    @classmethod
+    def year_max_in_range_and_after_min(cls, value: int | None, info: ValidationInfo) -> int | None:
+        _check_year_range(value)
+        year_min = info.data.get("year_min")
+        if value is not None and year_min is not None and year_min > value:
+            raise ValueError("O ano inicial deve ser menor ou igual ao final.")
+        return value
+
+
+def _check_year_range(value: int | None) -> int | None:
+    """Mesma faixa de ano do cadastro de filmes (spec 003, D-5)."""
+
+    max_year = date.today().year + MAX_YEARS_AHEAD
+    if value is not None and not MIN_YEAR <= value <= max_year:
+        raise ValueError(f"Deve estar entre {MIN_YEAR} e {max_year}.")
+    return value
+
+
+class CatalogQuery(CatalogFilters):
+    """Parâmetros de GET /movies: paginação e busca (001) mais filtros e ordenação (100)."""
+
+    page: int = Field(default=1, ge=1, description="Página, começando em 1.")
+    page_size: int = Field(default=20, ge=1, le=100, description="Filmes por página (1 a 100).")
+    search: str = Field(
+        default="",
+        max_length=200,
+        description="Parte do título; não diferencia acentos nem maiúsculas.",
+    )
+
+    def filters(self) -> CatalogFilters:
+        """Só os filtros e a ordenação, sem paginação e busca."""
+
+        return CatalogFilters.model_validate(
+            self.model_dump(exclude={"page", "page_size", "search"})
+        )

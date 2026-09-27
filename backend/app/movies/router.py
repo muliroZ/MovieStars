@@ -1,11 +1,14 @@
 """Rotas HTTP do domínio de filmes."""
 
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from fastapi.exceptions import RequestValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
 from app.movies.schemas import (
+    CatalogQuery,
     MovieDetail,
     MovieInput,
     MovieListItem,
@@ -31,18 +34,23 @@ genres_router = APIRouter()
 directors_router = APIRouter()
 
 
-@router.get("", response_model=Page[MovieListItem], summary="Lista o catálogo paginado")
+@router.get(
+    "",
+    response_model=Page[MovieListItem],
+    summary="Lista o catálogo paginado, com busca, filtros e ordenação",
+)
 async def get_movies(
-    page: int = Query(1, ge=1, description="Página, começando em 1."),
-    page_size: int = Query(20, ge=1, le=100, description="Filmes por página (1 a 100)."),
-    search: str = Query(
-        "",
-        max_length=200,
-        description="Parte do título; não diferencia acentos nem maiúsculas.",
-    ),
+    # Um modelo reúne os parâmetros da URL e as validações cruzadas (plan 100, DEC-2).
+    query: Annotated[CatalogQuery, Query()],
     db: AsyncSession = Depends(get_db),
 ) -> Page[MovieListItem]:
-    return await list_movies(db, page=page, page_size=page_size, search=search)
+    return await list_movies(
+        db,
+        page=query.page,
+        page_size=query.page_size,
+        search=query.search,
+        filters=query.filters(),
+    )
 
 
 MOVIE_NOT_FOUND = "Filme não encontrado."

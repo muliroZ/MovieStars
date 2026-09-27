@@ -6,13 +6,21 @@ from decimal import Decimal
 from typing import Any
 from uuid import uuid4
 
-from sqlalchemy import delete, func, select
+from sqlalchemy import ColumnElement, Subquery, delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.movies.models import DimGenre, DimMovie, DimPerson, FactMoviePerformance, MovieReview
+from app.movies.models import (
+    DimGenre,
+    DimMovie,
+    DimPerson,
+    FactMoviePerformance,
+    MovieReview,
+    bridge_movie_genre,
+)
 from app.movies.normalization import normalize_title
 from app.movies.schemas import (
+    CatalogFilters,
     MovieDetail,
     MovieFinancials,
     MovieInput,
@@ -24,38 +32,54 @@ from app.movies.schemas import (
 
 
 async def list_movies(
-    db: AsyncSession, page: int, page_size: int, search: str = ""
+    db: AsyncSession,
+    page: int,
+    page_size: int,
+    search: str = "",
+    filters: CatalogFilters | None = None,
 ) -> Page[MovieListItem]:
-    """Catálogo paginado, em ordem alfabética sem diferenciar acentos e maiúsculas.
+    """Catálogo paginado, com busca pelo título, filtros e ordenação.
 
-    `search` filtra por qualquer parte do título, também sem diferenciar acentos e
-    maiúsculas; vazio (ou só espaços) mostra o catálogo completo.
+    `search` filtra por qualquer parte do título, sem diferenciar acentos e
+    maiúsculas. Sem `filters`, a ordem é a alfabética da feature 001.
     """
 
-    filters = []
-    term = normalize_title(search.strip())
-    if term:
-        # autoescape: "%" e "_" do termo são texto comum, não curingas do LIKE.
-        filters.append(DimMovie.titulo_normalizado.contains(term, autoescape=True))
+    filters = filters or CatalogFilters()
+    stats = _review_stats()
+    conditions = _filter_conditions(filters, search, stats)
 
-    total = await db.scalar(select(func.count()).select_from(DimMovie).where(*filters))
+    count_query = select(func.count()).select_from(DimMovie)
+    if _filters_need_stats(filters):
+        count_query = count_query.outerjoin(stats, stats.c.sk_movie_id == DimMovie.sk_movie_id)
+    total = await db.scalar(count_query.where(*conditions))
+
     offset = (page - 1) * page_size
     movies: list[DimMovie] = []
     # Página além da última: lista vazia sem consultar. Isso também evita estourar o
     # limite de 64 bits do OFFSET do SQLite com páginas enormes (ex.: page=10**18).
     if offset < total:
+        # Etapa 1: só as chaves, na ordem. Ordenar sem carregar todas as colunas
+        # (sinopses etc.) deixa as páginas fundas bem mais rápidas (plan 100, DEC-15).
+        keys_query = select(DimMovie.sk_movie_id)
+        if _needs_stats(filters):
+            keys_query = keys_query.outerjoin(stats, stats.c.sk_movie_id == DimMovie.sk_movie_id)
+        page_keys = list(
+            await db.scalars(
+                keys_query.where(*conditions)
+                .order_by(*_order_by(filters, stats))
+                .offset(offset)
+                .limit(page_size)
+            )
+        )
+        # Etapa 2: os filmes dessas chaves, com gêneros e pessoas em 2 consultas (sem N+1
+        # e sem lazy load, que em código assíncrono gera MissingGreenlet).
         result = await db.scalars(
             select(DimMovie)
-            .where(*filters)
-            # O índice ix_dim_movies_ordem_catalogo cobre exatamente esta ordem.
-            .order_by(DimMovie.titulo_normalizado, DimMovie.ano_lancamento, DimMovie.sk_movie_id)
-            .offset(offset)
-            .limit(page_size)
-            # Carrega gêneros e pessoas dos filmes da página em 2 consultas (sem N+1 e
-            # sem lazy load, que em código assíncrono gera MissingGreenlet).
+            .where(DimMovie.sk_movie_id.in_(page_keys))
             .options(selectinload(DimMovie.genres), selectinload(DimMovie.people))
         )
-        movies = list(result.all())
+        movies_by_key = {movie.sk_movie_id: movie for movie in result}
+        movies = [movies_by_key[key] for key in page_keys]  # mantém a ordem da etapa 1
     ratings = await _ratings_by_movie(db, [movie.sk_movie_id for movie in movies])
 
     return Page[MovieListItem](
@@ -65,6 +89,112 @@ async def list_movies(
         page_size=page_size,
         pages=math.ceil(total / page_size),
     )
+
+
+def _review_stats() -> Subquery:
+    """Média (0–10) e quantidade de avaliações por filme, calculadas na consulta (4.2).
+
+    O índice cobridor (sk_movie_id, nota) responde sem ler a tabela.
+    """
+
+    return (
+        select(
+            MovieReview.sk_movie_id,
+            func.avg(MovieReview.nota).label("media"),
+            func.count().label("qtd"),
+        )
+        .group_by(MovieReview.sk_movie_id)
+        .subquery("review_stats")
+    )
+
+
+def _filters_need_stats(filters: CatalogFilters) -> bool:
+    """Algum filtro usa a média ou a quantidade de avaliações."""
+
+    return filters.reviews == "with" or filters.min_stars is not None
+
+
+def _needs_stats(filters: CatalogFilters) -> bool:
+    """O agregado só entra quando um filtro ou a ordenação precisa dele (plan 100, DEC-4)."""
+
+    return _filters_need_stats(filters) or filters.sort in ("rating", "reviews")
+
+
+def _filter_conditions(
+    filters: CatalogFilters, search: str, stats: Subquery
+) -> list[ColumnElement[bool]]:
+    """Condições do WHERE: busca pelo título e filtros; cada filtro vazio não restringe."""
+
+    conditions: list[ColumnElement[bool]] = []
+    term = normalize_title(search.strip())
+    if term:
+        # autoescape: "%" e "_" do termo são texto comum, não curingas do LIKE.
+        conditions.append(DimMovie.titulo_normalizado.contains(term, autoescape=True))
+
+    genres = list(dict.fromkeys(filters.genre))
+    if genres:
+        movies_with_genres = (
+            select(bridge_movie_genre.c.sk_movie_id)
+            .join(DimGenre, DimGenre.sk_genre_id == bridge_movie_genre.c.sk_genre_id)
+            .where(DimGenre.nome_genero.in_(genres))
+        )
+        if filters.genre_mode == "all":
+            # Todos os gêneros: o filme precisa aparecer uma vez para cada um.
+            movies_with_genres = movies_with_genres.group_by(
+                bridge_movie_genre.c.sk_movie_id
+            ).having(func.count() == len(genres))
+        conditions.append(DimMovie.sk_movie_id.in_(movies_with_genres))
+
+    if filters.year_min is not None:
+        conditions.append(DimMovie.ano_lancamento >= filters.year_min)
+    if filters.year_max is not None:
+        conditions.append(DimMovie.ano_lancamento <= filters.year_max)
+    if filters.status:
+        conditions.append(DimMovie.status_filme.in_(filters.status))
+
+    if filters.reviews == "with":
+        conditions.append(stats.c.qtd.is_not(None))
+    elif filters.reviews == "without":
+        # NOT EXISTS usa o índice por filme, sem calcular médias (DEC-5).
+        has_review = select(MovieReview.sk_movie_id).where(
+            MovieReview.sk_movie_id == DimMovie.sk_movie_id
+        )
+        conditions.append(~has_review.exists())
+
+    if filters.min_stars is not None:
+        # Compara a média exibida (1 casa decimal), a mesma do cartão (DEC-6).
+        conditions.append(func.round(stats.c.media / 2, 1) >= filters.min_stars)
+
+    return conditions
+
+
+def _order_by(filters: CatalogFilters, stats: Subquery) -> list[ColumnElement[Any]]:
+    """Ordem do catálogo (spec 100, CA-13 a CA-16).
+
+    Cada campo tem uma direção padrão, trocada por `reverse`. Valores vazios (sem ano,
+    sem avaliação) ficam sempre no fim, e empates seguem o título, o ano e a chave,
+    para a ordem ser estável entre páginas. A ordem por título A–Z usa o índice
+    ix_dim_movies_ordem_catalogo.
+    """
+
+    tiebreak = [DimMovie.titulo_normalizado, DimMovie.ano_lancamento, DimMovie.sk_movie_id]
+    reverse = filters.reverse
+
+    if filters.sort == "title":
+        if not reverse:
+            return tiebreak
+        return [DimMovie.titulo_normalizado.desc(), DimMovie.ano_lancamento, DimMovie.sk_movie_id]
+
+    if filters.sort == "year":  # padrão: mais recentes primeiro
+        year = DimMovie.ano_lancamento
+        primary = (year.asc() if reverse else year.desc()).nulls_last()
+    elif filters.sort == "rating":  # padrão: maiores médias primeiro
+        average = stats.c.media
+        primary = (average.asc() if reverse else average.desc()).nulls_last()
+    else:  # "reviews" — padrão: mais avaliados primeiro; sem avaliação conta como 0
+        count = func.coalesce(stats.c.qtd, 0)
+        primary = count.asc() if reverse else count.desc()
+    return [primary, *tiebreak]
 
 
 async def _ratings_by_movie(db: AsyncSession, movie_ids: list[str]) -> dict[str, tuple[float, int]]:

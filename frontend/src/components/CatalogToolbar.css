@@ -1,0 +1,43 @@
+/* A barra quebra linha em telas estreitas (spec 100, CA-23). */
+.catalog-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.catalog-toolbar__sort {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.catalog-toolbar__sort label {
+  color: var(--color-text-muted);
+}
+
+.catalog-toolbar__sort select {
+  width: auto;
+}
+
+.catalog-toolbar__button {
+  padding: 0.55rem 0.9rem;
+  color: var(--color-text);
+  white-space: nowrap;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.catalog-toolbar__button:hover {
+  border-color: var(--color-accent);
+}
+
+.catalog-toolbar__button[aria-expanded='true'],
+.catalog-toolbar__button[aria-pressed='true'] {
+  color: var(--color-bg);
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+}

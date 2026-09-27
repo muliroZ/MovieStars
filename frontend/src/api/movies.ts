@@ -6,20 +6,26 @@ import type {
   Review,
   ReviewInput,
 } from '../types/movie'
-import { apiGet, apiSend } from './client'
+import { apiGet, apiSend, type QueryParams } from './client'
 
 export interface ListMoviesParams {
   page: number
   pageSize?: number
   search?: string
+  /** Filtros e ordenação já convertidos para a API (feature 100). */
+  filterParams?: QueryParams
 }
 
 /** GET /movies: uma página do catálogo, com busca opcional pelo título. */
 export function listMovies(
-  { page, pageSize = 20, search = '' }: ListMoviesParams,
+  { page, pageSize = 20, search = '', filterParams = {} }: ListMoviesParams,
   signal?: AbortSignal,
 ): Promise<Page<MovieListItem>> {
-  return apiGet<Page<MovieListItem>>('/movies', { page, page_size: pageSize, search }, signal)
+  return apiGet<Page<MovieListItem>>(
+    '/movies',
+    { ...filterParams, page, page_size: pageSize, search },
+    signal,
+  )
 }
 
 /** GET /movies/{id}: detalhes de um filme. Filme inexistente → ApiError com status 404. */

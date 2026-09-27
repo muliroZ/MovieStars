@@ -13,6 +13,7 @@ interface StarInputProps {
   labelId: string
   describedBy?: string
   invalid?: boolean
+  disabled?: boolean
 }
 
 /**
@@ -27,10 +28,12 @@ function StarInput({
   labelId,
   describedBy,
   invalid = false,
+  disabled = false,
 }: StarInputProps) {
   const groupName = useId()
   const [hovered, setHovered] = useState<number | null>(null)
-  const highlighted = hovered ?? value ?? 0 // prévia ao passar o mouse
+  // Prévia ao passar o mouse; desabilitado, não há prévia (spec 100, CA-9).
+  const highlighted = (disabled ? null : hovered) ?? value ?? 0
 
   return (
     <div
@@ -38,7 +41,8 @@ function StarInput({
       aria-labelledby={labelId}
       aria-describedby={describedBy}
       aria-invalid={invalid || undefined}
-      className={`star-input${invalid ? ' star-input--invalid' : ''}`}
+      aria-disabled={disabled || undefined}
+      className={`star-input${invalid ? ' star-input--invalid' : ''}${disabled ? ' star-input--disabled' : ''}`}
       onMouseLeave={() => setHovered(null)}
     >
       {STARS.map((stars) => (
@@ -56,6 +60,7 @@ function StarInput({
             checked={value === stars}
             onChange={() => onChange(stars)}
             onBlur={onBlur}
+            disabled={disabled}
           />
           <span aria-hidden="true">★</span>
           <span className="visually-hidden">{stars} de 5 estrelas</span>

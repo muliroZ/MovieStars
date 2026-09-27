@@ -71,6 +71,9 @@ bridge_movie_genre = Table(
         ForeignKey("dim_genres.sk_genre_id", ondelete="CASCADE"),
         primary_key=True,
     ),
+    # A chave primária começa por sk_movie_id; este índice busca filmes por gênero
+    # (filtros do catálogo, feature 100).
+    Index("ix_bridge_movie_genre_genero", "sk_genre_id", "sk_movie_id"),
 )
 
 bridge_movie_company = Table(
@@ -251,13 +254,18 @@ class MovieReview(Base):
     """Avaliação individual de um filme na escala de 0 a 10."""
 
     __tablename__ = "movie_reviews"
-    __table_args__ = (CheckConstraint("nota >= 0 AND nota <= 10", name="nota_range"),)
+    __table_args__ = (
+        CheckConstraint("nota >= 0 AND nota <= 10", name="nota_range"),
+        # Índice "cobridor": busca por filme e já traz a nota, então a média e a
+        # quantidade saem sem ler a tabela (filtros e ordenação, feature 100).
+        Index("ix_movie_reviews_movie_nota", "sk_movie_id", "nota"),
+    )
 
     sk_movie_review_id: Mapped[str] = mapped_column(
         String(64), primary_key=True, default=generate_surrogate_key
     )
     sk_movie_id: Mapped[str] = mapped_column(
-        String(64), ForeignKey("dim_movies.sk_movie_id", ondelete="CASCADE"), index=True
+        String(64), ForeignKey("dim_movies.sk_movie_id", ondelete="CASCADE")
     )
     nome: Mapped[str] = mapped_column(String(120))
     nota: Mapped[float] = mapped_column(Double)

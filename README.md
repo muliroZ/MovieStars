@@ -77,8 +77,8 @@ bun run lint
 ### Depois de atualizar o repositório
 
 Se novas migrações chegarem (por exemplo, a `0002_titulo_normalizado` da
-feature 001 e a `0003_nome_normalizado_pessoas` da feature 003), aplique-as
-antes de subir a API:
+feature 001, a `0003_nome_normalizado_pessoas` da feature 003 e a
+`0004_indices_filtros` da feature 100), aplique-as antes de subir a API:
 
 ```bash
 cd backend
@@ -86,7 +86,7 @@ cd backend
 ```
 
 A carga não precisa ser refeita: as migrações preenchem os filmes e as
-pessoas que já estão no banco.
+pessoas que já estão no banco (a 0004 só cria índices).
 
 ## Dados
 
@@ -141,7 +141,7 @@ implementação, com revisão ao final de cada etapa.
 | 002 — Detalhes e média    | Concluída       |
 | 003 — Gerenciar filmes    | Concluída       |
 | 004 — Avaliações          | Concluída       |
-| 100 — Filtros do catálogo | Plan aprovado   |
+| 100 — Filtros do catálogo | Concluída       |
 
 ## Decisões
 
@@ -273,3 +273,32 @@ Resumo; o texto completo está na seção 4 da
   vem sempre das avaliações individuais); a data de criação tem precisão de
   1 segundo, então duas avaliações do mesmo filme criadas no mesmo segundo
   podem aparecer fora de ordem.
+
+### Filtros e ordenação do catálogo (feature 100)
+
+- **Onde:** uma barra acima da grade, com o botão "Filtros (N)", o seletor
+  "Ordenar por" e o botão "Inverter". O painel de filtros começa fechado, e
+  abrir ou fechar não muda a lista.
+- **Filtros:** gêneros (com a chave "Qualquer um"/"Todos"), ano "de" e
+  "até" (inclusivos, com espera de 400 ms), status, avaliações ("Todos",
+  "Com avaliação", "Sem avaliação") e mínimo de estrelas de 1 a 5. Valem na
+  hora, somam com a busca pelo título e voltam para a página 1. "Limpar
+  filtros" mantém a busca e a ordenação.
+- **Mínimo de estrelas pela média exibida:** um filme mostrado com "4,0"
+  entra em "4 estrelas ou mais", mesmo com média exata 3,96. Filmes sem
+  avaliação não entram, e "Sem avaliação" desabilita as estrelas.
+- **Ordenação:** título (A–Z, padrão), ano (mais recentes), média de
+  estrelas (maiores) e quantidade de avaliações (mais avaliados); "Inverter"
+  troca a direção. Filmes sem ano ou sem avaliação ficam sempre no fim;
+  empates vão pelo título e pelo ano.
+- **Tudo no endereço:** filtros e ordenação ficam na URL com os mesmos nomes
+  da API (`genre`, `genre_mode`, `year_min`, `year_max`, `status`,
+  `reviews`, `min_stars`, `sort`, `reverse`), sem os valores padrão.
+  Recarregar e o voltar do navegador funcionam; valores inválidos são
+  ignorados, e gêneros inexistentes saem da URL.
+- **Desempenho:** a média e a quantidade de avaliações são calculadas na hora
+  (`AVG` sobre `movie_reviews`) e só entram na consulta quando o filtro ou a
+  ordenação precisam delas. A migração 0004 criou dois índices
+  (`movie_reviews (sk_movie_id, nota)` e `bridge_movie_genre (sk_genre_id,
+  sk_movie_id)`), e a página ordena as chaves antes de carregar os filmes. O
+  pior caso medido foi 456 ms.
