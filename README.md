@@ -141,6 +141,7 @@ implementação, com revisão ao final de cada etapa.
 | 002 — Detalhes e média    | Concluída       |
 | 003 — Gerenciar filmes    | Concluída       |
 | 004 — Avaliações          | Concluída       |
+| 100 — Filtros do catálogo | Plan aprovado   |
 
 ## Decisões
 
