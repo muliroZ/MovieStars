@@ -122,6 +122,7 @@ linha, o erro abortaria a transação inteira (ver decisão DEC-6).
 | Todas               | Chave primária não repetida dentro do próprio arquivo         | Descarta (fica a primeira) |
 | `dim_movies`        | `id_filme` não repetido no arquivo nem no banco (com outra chave) | Descarta |
 | `dim_movies`        | `sinopse` começando com aspas → correção do CA-18             | Corrige e conta |
+| `dim_movies`        | `titulo` começando com aspas → correção do CA-19 (2026-09-27) | Corrige e conta |
 | `dim_genres`        | `nome_genero` não repetido (arquivo ou banco, com outra chave) | Descarta |
 | `dim_companies`     | `nome_produtora` não repetido (idem)                          | Descarta  |
 | `dim_people`        | `tipo_pessoa` em Ator, Diretor, Roteirista                    | Descarta  |
@@ -143,6 +144,15 @@ se o texto começa com '"':
         remove a última aspa          # 1 = fechamento; 3 = "" interno + fechamento
     troca cada '""' por '"'           # 2 no fim = "" interno de texto cortado
 ```
+
+Correção do CA-19 (alteração de 2026-09-27), função
+`fix_title_quotes(titulo)`: aplica `fix_synopsis_quotes` e, se houve
+correção, põe em maiúscula a primeira letra do título (a primeira que
+`str.isalpha()` reconhece; em `"blessed"` é o `b`). O `titulo_normalizado`
+é calculado depois, a partir do título já corrigido.
+
+Nos bancos já carregados, a migração `0005_titulos_com_aspas` aplica a
+mesma correção (DEC-13).
 
 ### Consultas feitas ao banco
 
@@ -308,6 +318,15 @@ anotar o tempo e rodar de novo para confirmar CA-10.
   um log de diagnóstico.
   *Descartado:* `logging`, que mistura o relatório com mensagens do
   SQLAlchemy. *Descartado:* arquivo de relatório, porque a spec não pede.
+- **DEC-13. Migração de dados para os bancos já carregados (2026-09-27).**
+  A `0005_titulos_com_aspas` corrige os títulos e recalcula o
+  `titulo_normalizado`, com cópias congeladas das duas funções, como a 0002.
+  Ela só altera títulos que começam com aspas **e** têm aspas dobradas (a
+  marca do defeito nos 55 casos), então não corrige de novo `"Blessed"` e
+  `"Truelove: The Film"` num banco já corrigido pela carga. O `downgrade`
+  não desfaz a correção, que é de dados.
+  *Descartado:* pedir `load_data --reset`, que apagaria filmes e avaliações
+  criados pela aplicação.
 - **DEC-12. Estrutura de pastas fixa dentro de `--data-dir`.** O script
   espera as duas subpastas atuais.
   *Descartado:* procurar os arquivos por nome em qualquer subpasta. Seria

@@ -120,6 +120,13 @@ Os critérios abaixo tratam apenas de valores que o banco não aceita.
 
   Sinopses que não começam com aspas não são alteradas. O relatório informa
   quantas sinopses foram corrigidas (D-1).
+- **CA-19** (H-1, H-4). Títulos que começam com aspas trazem o mesmo defeito
+  (ex.: `"floyd ""money"" Mayweather"`). A carga aplica a eles os passos do
+  CA-18 e, depois, põe em maiúscula a primeira letra do título, que a origem
+  deixou minúscula porque contou a aspa como o primeiro caractere
+  (`Floyd "money" Mayweather`). Títulos que não começam com aspas não são
+  alterados. O relatório informa quantos títulos foram corrigidos (D-5).
+  *(Alteração de 2026-09-27.)*
 
 ## Casos de borda
 
@@ -196,11 +203,27 @@ Os critérios abaixo tratam apenas de valores que o banco não aceita.
   sinopses, 4 nomes de pessoas, 4 produtoras). Alternativa descartada:
   removê-los. São poucos casos e não afetam o uso.
 - **D-4.** Regra geral: inconsistências de conteúdo nos CSVs são gravadas no
-  banco como estão. A única correção aplicada é a das aspas nas sinopses
-  (D-1, CA-18). Linhas ou campos só são descartados ou anulados quando o
+  banco como estão. As únicas correções aplicadas são as das aspas nas
+  sinopses e nos títulos (D-1, CA-18; D-5, CA-19). Linhas ou campos só são descartados ou anulados quando o
   banco não aceitaria o valor (CA-12, CA-13). Alternativa descartada:
   corrigir caso a caso. Isso aumentaria o escopo da carga e afastaria o
   banco dos dados de origem.
+- **D-5.** Os 55 títulos com defeito de aspas são corrigidos (CA-19), com a
+  primeira letra em maiúscula. Motivo: eles abriam a ordem alfabética do
+  catálogo e apareciam com aspas extras e inicial minúscula. A regra é a
+  mesma do CA-18, sem casos especiais:
+  - 51 títulos ficam sem aspas nas pontas;
+  - `"Blessed"` e `"Truelove: The Film"` continuam entre aspas, que fazem
+    parte do título na origem;
+  - `Headwind"21` e `Wwe Rivals: Bret "the Hitman" Hart Vs. Shawn Michaels"`
+    ficam com uma aspa sem par, como na origem.
+
+  O título `8' 19""` não começa com aspas e fica como está. Nomes de pessoas
+  e produtoras com trechos de sinopse são outro defeito e continuam como
+  estão. Nos bancos já carregados, a correção vem pela migração 0005.
+  Decisão de 2026-09-27, aprovada pelo desenvolvedor.
+  *Descartado:* manter a inicial minúscula, o que deixaria 52 títulos
+  diferentes do resto do catálogo.
 
 ## Fora de escopo
 
@@ -208,7 +231,8 @@ Os critérios abaixo tratam apenas de valores que o banco não aceita.
 - Atualizar (sobrescrever) registros já existentes com dados novos do CSV.
 - Carga incremental, agendada ou a partir de fontes externas (APIs, TMDB).
 - Transformar ou enriquecer os dados (conversão de moeda, recálculo de
-  lucro, recálculo de `dim_reviews`), exceto a correção de aspas do CA-18.
+  lucro, recálculo de `dim_reviews`), exceto as correções de aspas do CA-18
+  e do CA-19.
 - Recuperar o texto das sinopses cortadas na origem.
 - Geração de dados fictícios adicionais.
 - O "contexto generativo" citado no README do repositório base.

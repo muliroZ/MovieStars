@@ -209,6 +209,42 @@ os testes que a cobrem.
     marcadas.
   - Verificação: saídas do `pytest` e do `ruff` no resumo final.
 
+## Fase 8 — Títulos com aspas (alteração de 2026-09-27)
+
+Pendência retomada pelo desenvolvedor: CA-19 e D-5 da spec, DEC-13 do plan.
+
+- [x] **T-18. `fix_title_quotes(titulo)` e uso na carga** (CA-19)
+  - Aplica `fix_synopsis_quotes` e põe em maiúscula a primeira letra quando
+    houve correção; `load_file` corrige o `titulo` antes do insert e conta
+    em `titles_fixed`; o relatório mostra os títulos corrigidos.
+  - Testes: aspas nas pontas com aspas internas; título que continua entre
+    aspas (`"""blessed"""` → `"Blessed"`); aspa sem par no fim; letra
+    acentuada e cirílico; escrita sem maiúsculas (japonês); título sem aspas
+    não muda; carga grava o título e o `titulo_normalizado` corrigidos;
+    relatório.
+  - Verificação: `pytest` e `ruff check .` passam.
+
+- [x] **T-19. Migração `0005_titulos_com_aspas`** (CA-19, DEC-13)
+  - Corrige os títulos que começam com aspas e têm aspas dobradas, e
+    recalcula o `titulo_normalizado`; `downgrade` sem alteração de dados.
+  - Verificação:
+    - numa cópia do `moviestars.db`, o `upgrade` corrige os 55 títulos, com
+      o mesmo resultado de `fix_title_quotes`, e nada mais muda;
+    - rodar a correção de novo não altera nada;
+    - `downgrade -1` e `upgrade head` num banco temporário rodam sem erro;
+      `alembic check` não detecta diferenças.
+
+- [x] **T-20. Aplicar a migração no `moviestars.db`**
+  - Verificação: `alembic current` mostra `0005_titulos_com_aspas (head)`;
+    os 55 títulos corrigidos; o catálogo começa por `"Blessed"` e
+    `"Truelove: The Film"`; os roteiros da 001 continuam passando.
+
+- [x] **T-21. Documentação**
+  - `README.md` (decisões da 000 e da 001, migração 0005), `CLAUDE.md`
+    (armadilha dos títulos com aspas) e a memória da pendência.
+  - Verificação: `pytest`, `ruff check .`, `ruff format --check .` e
+    `alembic check` passam.
+
 ## Rastreabilidade
 
 | CA    | Tasks                        |
@@ -231,3 +267,4 @@ os testes que a cobrem.
 | CA-16 | T-12                         |
 | CA-17 | T-08, T-12                   |
 | CA-18 | T-06, T-08, T-12, T-14       |
+| CA-19 | T-18, T-19, T-20             |

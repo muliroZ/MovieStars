@@ -77,8 +77,9 @@ bun run lint
 ### Depois de atualizar o repositório
 
 Se novas migrações chegarem (por exemplo, a `0002_titulo_normalizado` da
-feature 001, a `0003_nome_normalizado_pessoas` da feature 003 e a
-`0004_indices_filtros` da feature 100), aplique-as antes de subir a API:
+feature 001, a `0003_nome_normalizado_pessoas` da feature 003, a
+`0004_indices_filtros` da feature 100 e a `0005_titulos_com_aspas`), aplique-as
+antes de subir a API:
 
 ```bash
 cd backend
@@ -86,7 +87,8 @@ cd backend
 ```
 
 A carga não precisa ser refeita: as migrações preenchem os filmes e as
-pessoas que já estão no banco (a 0004 só cria índices).
+pessoas que já estão no banco (a 0004 só cria índices, e a 0005 corrige os
+55 títulos com aspas).
 
 ## Dados
 
@@ -165,6 +167,12 @@ Resumo; o texto completo está na seção 4 da
 - **Exceção, aspas nas sinopses:** 4.801 sinopses vêm com aspas de escape
   duplicadas; a carga remove as aspas extras. 3.312 delas vêm cortadas na
   origem e não há como recuperar o texto.
+- **Exceção, aspas nos títulos:** 55 títulos vêm com o mesmo defeito. A
+  carga aplica a mesma regra e põe a primeira letra em maiúscula, que a
+  origem deixou minúscula (ex.: `Floyd "money" Mayweather`). Dois títulos
+  continuam entre aspas porque elas fazem parte do título (`"Blessed"`,
+  `"Truelove: The Film"`), e dois ficam com uma aspa sem par, como na origem.
+  Nos bancos já carregados, a correção vem pela migração 0005.
 - **Duração 0:** 10.160 filmes têm duração 0; a interface exibe "não
   informada".
 - **Datas das avaliações importadas:** o CSV não tem data, então todas
@@ -192,9 +200,10 @@ Resumo; o texto completo está na seção 4 da
   `titulo_normalizado` (migração 0002), com índice. Cada página responde em
   menos de 40 ms com o catálogo completo.
 - **Busca literal:** `%` e `_` são tratados como texto comum.
-- **Títulos com aspas extras:** 55 títulos vêm com o defeito de aspas da
-  origem e aparecem no início da lista. O tratamento ficou para depois das
-  funcionalidades principais.
+- **Títulos com aspas extras:** 55 títulos vinham com o defeito de aspas da
+  origem e abriam a lista. Desde 2026-09-27 eles são corrigidos (ver "Carga
+  de dados"); a lista agora começa por `"Blessed"` e `"Truelove: The Film"`,
+  que têm aspas na origem.
 - **Paginação:** primeira, anterior, próxima e última, com "Página X de Y".
   Em telas estreitas, os botões mostram só os símbolos.
 - **Responsivo:** a partir de 360 px. O cabeçalho com a busca fica fixo no

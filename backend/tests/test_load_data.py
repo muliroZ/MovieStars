@@ -19,6 +19,7 @@ from app.movies.load_data import (
     check_tables,
     convert_value,
     fix_synopsis_quotes,
+    fix_title_quotes,
     format_report,
     load_file,
     main,
@@ -66,7 +67,7 @@ VALID_CSVS: dict[str, tuple[list[str], list[list[str]]]] = {
                 "",
                 "",
             ],
-            ["m3", "103", "Filme Futuro", "", "", "0", "Planejado", "", "", ""],
+            ["m3", "103", '"filme ""Futuro"""', "", "", "0", "Planejado", "", "", ""],
         ],
     ),
     "bases_atv_dev1/dim_genres.csv": (
@@ -348,6 +349,37 @@ def test_fix_synopsis_quotes_keeps_other_text(raw: str) -> None:
     assert fix_synopsis_quotes(raw) == (raw, False)
 
 
+# --- T-18: fix_title_quotes (CA-19) ---
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        ('"floyd ""money"" Mayweather"', 'Floyd "money" Mayweather'),
+        # aspas que fazem parte do título: continuam, e a letra depois delas sobe
+        ('"""blessed"""', '"Blessed"'),
+        # aspa sem par no fim fica como na origem (D-5)
+        (
+            '"wwe Rivals: Bret ""the Hitman"" Hart Vs. Shawn Michaels"""',
+            'Wwe Rivals: Bret "the Hitman" Hart Vs. Shawn Michaels"',
+        ),
+        ('"headwind""21"', 'Headwind"21'),
+        ('"ángela Aguilar ""bolero"""', 'Ángela Aguilar "bolero"'),
+        ('"маша И Медведь: Скажите ""ой!"""', 'Маша И Медведь: Скажите "ой!"'),
+        # escrita sem maiúsculas: só as aspas mudam
+        ('"ヴァイオレット 「きっと""愛""を知る日」"', 'ヴァイオレット 「きっと"愛"を知る日」'),
+    ],
+)
+def test_fix_title_quotes_corrects_escaped_titles(raw: str, expected: str) -> None:
+    assert fix_title_quotes(raw) == (expected, True)
+
+
+@pytest.mark.parametrize("raw", ["Rings", "cidade sem aspas", '8\' 19""', ""])
+def test_fix_title_quotes_keeps_other_titles(raw: str) -> None:
+    # sem aspa inicial nada muda, nem a inicial minúscula
+    assert fix_title_quotes(raw) == (raw, False)
+
+
 # --- Apoio aos testes de gravação ---
 
 MOVIES = "bases_atv_dev1/dim_movies.csv"
@@ -450,6 +482,7 @@ def test_load_parents_saves_valid_rows(database_url: str, csv_dir: Path) -> None
     assert stats_of(report, "dim_people").inserted == 3
     assert report.issues == {}
     assert report.synopses_fixed == 1
+    assert report.titles_fixed == 1
 
     rows = fetch(
         database_url,
@@ -458,7 +491,7 @@ def test_load_parents_saves_valid_rows(database_url: str, csv_dir: Path) -> None
     )
     assert rows[1][5] == 'Julia fica "preocupada" com Holt.'
     # células vazias viram NULL; duração 0 fica como está (D-2)
-    assert rows[2] == ("m3", "Filme Futuro", None, 0, "Planejado", None, None)
+    assert rows[2] == ("m3", 'Filme "Futuro"', None, 0, "Planejado", None, None)
     assert rows[0][4] == "Lançado"
     assert fetch(database_url, "SELECT nome_pessoa FROM dim_people WHERE sk_person_id = 'p3'") == [
         ("F. Javier Gutiérrez",)
@@ -644,7 +677,7 @@ def test_run_load_saves_everything_without_orphans(database_url: str, csv_dir: P
     # coluna derivada (feature 001) preenchida pela carga, sem vir do CSV
     assert fetch(
         database_url, "SELECT sk_movie_id, titulo_normalizado FROM dim_movies ORDER BY 1"
-    ) == [("m1", "cidade de deus"), ("m2", "rings"), ("m3", "filme futuro")]
+    ) == [("m1", "cidade de deus"), ("m2", "rings"), ("m3", 'filme "futuro"')]
     # coluna derivada (feature 003) preenchida pela carga, sem vir do CSV
     assert fetch(
         database_url, "SELECT nome_normalizado FROM dim_people WHERE sk_person_id = 'p3'"
@@ -741,6 +774,7 @@ def test_format_report_shows_counters_and_grouped_issues() -> None:
     report = LoadReport(
         tables=[TableStats("dim_movies", read=95645, inserted=95640, ignored=0, discarded=5)],
         synopses_fixed=4801,
+        titles_fixed=55,
         elapsed_seconds=18.44,
     )
     for line in range(2, 14):  # 12 ocorrências do mesmo motivo
@@ -752,7 +786,10 @@ def test_format_report_shows_counters_and_grouped_issues() -> None:
     assert "Carga concluída em 18,4 s" in text_report
     table_row = next(line for line in text_report.splitlines() if line.startswith("dim_movies"))
     assert table_row.split() == ["dim_movies", "95.645", "95.640", "0", "5"]
-    assert "Correções: 4.801 sinopses com aspas corrigidas nas linhas lidas" in text_report
+    assert (
+        "Correções: 4.801 sinopses e 55 títulos com aspas corrigidos nas linhas lidas"
+        in text_report
+    )
     assert (
         "movies_reviews.csv: 12 × linha descartada: nota fora de 0–10"
         " (linhas 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 e mais 2)"

@@ -90,6 +90,7 @@ class LoadReport:
     # (arquivo, motivo) → números das linhas afetadas
     issues: dict[tuple[str, str], list[int]] = field(default_factory=dict)
     synopses_fixed: int = 0
+    titles_fixed: int = 0
     elapsed_seconds: float = 0.0
 
     def add_issue(self, file: str, reason: str, line: int) -> None:
@@ -204,6 +205,25 @@ def fix_synopsis_quotes(text: str) -> tuple[str, bool]:
     return fixed.replace('""', '"'), True
 
 
+def fix_title_quotes(text: str) -> tuple[str, bool]:
+    """Corrige títulos com o mesmo defeito de aspas das sinopses (CA-19).
+
+    Além do CA-18, põe em maiúscula a primeira letra: a origem deixou-a
+    minúscula porque contou a aspa como o primeiro caractere, ex.:
+    '"floyd ""money"" Mayweather"' → 'Floyd "money" Mayweather'.
+    """
+
+    fixed, changed = fix_synopsis_quotes(text)
+    if not changed:
+        return text, False
+    for index, char in enumerate(fixed):
+        if char.isalpha():
+            # Só a letra; em escritas sem maiúsculas (ex.: japonês) nada muda.
+            fixed = fixed[:index] + char.upper() + fixed[index + 1 :]
+            break
+    return fixed, True
+
+
 BATCH_SIZE = 5_000
 
 # Tabelas referenciadas por chaves estrangeiras e o nome usado no relatório.
@@ -292,6 +312,10 @@ def load_file(
             if table.name == "dim_movies" and values["sinopse"] is not None:
                 values["sinopse"], fixed = fix_synopsis_quotes(values["sinopse"])
                 report.synopses_fixed += fixed
+            if table.name == "dim_movies":
+                # Antes do insert: o titulo_normalizado é calculado a partir deste valor.
+                values["titulo"], fixed = fix_title_quotes(values["titulo"])
+                report.titles_fixed += fixed
 
             _remember(values, table, known, seen_keys)
             batch.append(values)
@@ -453,8 +477,13 @@ def format_report(report: LoadReport) -> str:
         )
 
     # Contadas ao ler a linha; numa reexecução elas são lidas mas ignoradas pelo banco.
-    fixed = _int_br(report.synopses_fixed)
-    lines += ["", f"Correções: {fixed} sinopses com aspas corrigidas nas linhas lidas", ""]
+    synopses = _int_br(report.synopses_fixed)
+    titles = _int_br(report.titles_fixed)
+    lines += [
+        "",
+        f"Correções: {synopses} sinopses e {titles} títulos com aspas corrigidos nas linhas lidas",
+        "",
+    ]
 
     if not report.issues:
         lines.append("Ocorrências: nenhuma")

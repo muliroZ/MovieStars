@@ -133,8 +133,12 @@ bun run lint
   catálogo ficam erradas para aquele filme.
 - **Ordem da busca/catálogo:** use `titulo_normalizado, ano_lancamento,
   sk_movie_id` (coberta pelo índice `ix_dim_movies_ordem_catalogo`).
-- **Títulos com aspas extras** (55) aparecem no início do catálogo: é uma
-  pendência adiada pelo desenvolvedor. Não corrija sem ele pedir.
+- **Títulos com aspas:** a carga corrige os 55 títulos com defeito de aspas
+  (`fix_title_quotes`, spec 000, CA-19), e a migração 0005 faz o mesmo nos
+  bancos já carregados, só em títulos com aspa inicial **e** aspas dobradas.
+  Não aplique a correção de novo num banco já corrigido: `"Blessed"` e
+  `"Truelove: The Film"` têm aspas legítimas. Nomes de pessoas e produtoras
+  com trechos de sinopse continuam como estão.
 - **Datas no frontend:** `data_lancamento` ("AAAA-MM-DD") é formatada
   dividindo o texto (`formatDate`); `new Date("2017-02-01")` vira 31/01 no
   fuso do Brasil. `created_at` é gravado em UTC sem fuso pelo SQLite; o

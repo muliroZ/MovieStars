@@ -157,9 +157,11 @@ como a tela reage a cada situação.
 
 ## Consequências conhecidas
 
-- **Títulos com aspas extras.** 55 títulos têm o mesmo defeito de aspas das
-  sinopses (ex.: `"""blessed"""`). Eles são exibidos como estão (D-1) e,
-  como começam com aspas, aparecem no início da ordem alfabética.
+- **Títulos com aspas extras.** 55 títulos tinham o mesmo defeito de aspas
+  das sinopses (ex.: `"""blessed"""`) e apareciam no início da ordem
+  alfabética. Desde 2026-09-27 eles são corrigidos (spec 000, CA-19 e D-5;
+  ver D-1). Só `"Blessed"` e `"Truelove: The Film"`, que têm aspas na origem,
+  continuam no início.
 - **Títulos com espaço no início.** 3 títulos começam com espaço (spec 000,
   D-3) e também aparecem no início da ordem.
 - **Títulos que começam com símbolo ou dígito** (263 e 1.400) aparecem
@@ -177,6 +179,8 @@ como a tela reage a cada situação.
 - **D-1.** Os 55 títulos com defeito de aspas são mantidos como estão (spec
   000, D-4). *Descartado:* estender a correção do CA-18 da spec 000 aos
   títulos.
+  **Revista em 2026-09-27:** a pendência foi retomada e a correção passou a
+  valer para os títulos (spec 000, CA-19 e D-5, migração 0005).
 - **D-2.** O cartão mostra média de estrelas, gêneros e diretores, além de
   pôster, título e ano. A duração não aparece no cartão.
 - **D-3.** A busca procura só no título, como na constituição. *Descartado:*
