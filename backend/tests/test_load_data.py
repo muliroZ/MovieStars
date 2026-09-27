@@ -420,8 +420,15 @@ def test_read_existing_keys_on_empty_database(database_url: str) -> None:
 def test_read_existing_keys_returns_saved_rows(database_url: str) -> None:
     engine = create_engine(database_url)
     with engine.begin() as conn:
-        conn.execute(text("INSERT INTO dim_genres VALUES ('g1', 'Drama')"))
-        conn.execute(text("INSERT INTO dim_people VALUES ('p1', 'Alice Braga', 'Ator')"))
+        conn.execute(
+            text("INSERT INTO dim_genres (sk_genre_id, nome_genero) VALUES ('g1', 'Drama')")
+        )
+        conn.execute(
+            text(
+                "INSERT INTO dim_people (sk_person_id, nome_pessoa, tipo_pessoa)"
+                " VALUES ('p1', 'Alice Braga', 'Ator')"
+            )
+        )
     with engine.connect() as conn:
         known = read_existing_keys(conn)
     engine.dispose()
@@ -638,6 +645,10 @@ def test_run_load_saves_everything_without_orphans(database_url: str, csv_dir: P
     assert fetch(
         database_url, "SELECT sk_movie_id, titulo_normalizado FROM dim_movies ORDER BY 1"
     ) == [("m1", "cidade de deus"), ("m2", "rings"), ("m3", "filme futuro")]
+    # coluna derivada (feature 003) preenchida pela carga, sem vir do CSV
+    assert fetch(
+        database_url, "SELECT nome_normalizado FROM dim_people WHERE sk_person_id = 'p3'"
+    ) == [("f. javier gutierrez",)]
 
 
 def test_run_load_twice_ignores_existing_rows(database_url: str, csv_dir: Path) -> None:

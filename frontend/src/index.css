@@ -34,7 +34,9 @@ a {
 }
 
 button,
-input {
+input,
+select,
+textarea {
   font: inherit;
 }
 
@@ -54,4 +56,33 @@ button:disabled {
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
+}
+
+/* Campos de formulário (feature 003). */
+input:not([type='checkbox']),
+select,
+textarea {
+  width: 100%;
+  padding: 0.55rem 0.7rem;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+[aria-invalid='true'] {
+  border-color: var(--color-danger);
+}
+
+.field-error {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--color-danger);
 }

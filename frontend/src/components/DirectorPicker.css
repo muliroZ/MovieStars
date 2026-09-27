@@ -1,0 +1,113 @@
+.director-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.director-picker__label {
+  font-weight: 600;
+}
+
+.director-picker__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.director-picker__chip {
+  display: inline-flex;
+  gap: 0.35rem;
+  align-items: center;
+  max-width: 100%;
+  padding: 0.25rem 0.35rem 0.25rem 0.7rem;
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+}
+
+.director-picker__new {
+  padding: 0 0.4rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--color-bg);
+  text-transform: uppercase;
+  background: var(--color-star);
+  border-radius: 999px;
+}
+
+.director-picker__remove {
+  padding: 0 0.3rem;
+  font-size: 1.1rem;
+  line-height: 1;
+  color: var(--color-text-muted);
+  background: none;
+  border: none;
+}
+
+.director-picker__remove:hover {
+  color: var(--color-danger);
+}
+
+.director-picker__field {
+  position: relative;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.director-picker__input {
+  flex: 1;
+  min-width: 0;
+}
+
+.director-picker__add {
+  padding: 0.5rem 0.9rem;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.director-picker__add:disabled {
+  opacity: 0.5;
+}
+
+/* Lista de sugestões flutuando abaixo do campo. */
+.director-picker__list {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  left: 0;
+  z-index: 5;
+  max-height: 16rem;
+  padding: 0.25rem 0;
+  margin: 0;
+  overflow-y: auto;
+  list-style: none;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 40%);
+}
+
+.director-picker__option {
+  padding: 0.45rem 0.8rem;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+
+.director-picker__option:hover,
+.director-picker__option[aria-selected='true'] {
+  background: var(--color-surface-hover);
+}
+
+.director-picker__hint {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}

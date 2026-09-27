@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1.router import api_router
 from app.core.config import get_settings
+from app.core.errors import register_error_handlers
 from app.core.logging import configure_logging
 from app.db.session import engine
 
@@ -37,6 +38,7 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    register_error_handlers(app)
     app.include_router(api_router, prefix=settings.api_v1_prefix)
 
     @app.get("/health", tags=["health"])

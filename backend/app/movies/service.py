@@ -3,14 +3,23 @@
 import math
 from datetime import UTC
 from decimal import Decimal
+from typing import Any
+from uuid import uuid4
 
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.movies.models import DimMovie, DimPerson, FactMoviePerformance, MovieReview
+from app.movies.models import DimGenre, DimMovie, DimPerson, FactMoviePerformance, MovieReview
 from app.movies.normalization import normalize_title
-from app.movies.schemas import MovieDetail, MovieFinancials, MovieListItem, Page, ReviewItem
+from app.movies.schemas import (
+    MovieDetail,
+    MovieFinancials,
+    MovieInput,
+    MovieListItem,
+    Page,
+    ReviewItem,
+)
 
 
 async def list_movies(
@@ -212,3 +221,157 @@ def _to_review_item(review: MovieReview) -> ReviewItem:
         # para a interface converter para o horário local.
         created_at=review.created_at.replace(tzinfo=UTC),
     )
+
+
+DIRECTOR_SUGGESTIONS = 10
+
+
+async def list_genres(db: AsyncSession) -> list[str]:
+    """Nomes dos gêneros cadastrados, em ordem alfabética."""
+
+    return list(await db.scalars(select(DimGenre.nome_genero).order_by(DimGenre.nome_genero)))
+
+
+async def search_directors(db: AsyncSession, search: str) -> list[str]:
+    """Até 10 diretores cujo nome contém o termo, sem diferenciar acentos e maiúsculas.
+
+    Ordem: o nome exatamente igual ao digitado, depois os que começam com o termo,
+    depois os demais em ordem alfabética.
+    """
+
+    typed = search.strip()
+    term = normalize_title(typed)
+    starts_with_term = DimPerson.nome_normalizado.startswith(term, autoescape=True)
+    names = await db.scalars(
+        select(DimPerson.nome_pessoa)
+        .where(
+            DimPerson.tipo_pessoa == "Diretor",
+            DimPerson.nome_normalizado.contains(term, autoescape=True),
+        )
+        .order_by(
+            (DimPerson.nome_pessoa == typed).desc(),
+            starts_with_term.desc(),
+            DimPerson.nome_normalizado,
+            DimPerson.nome_pessoa,
+        )
+        .limit(DIRECTOR_SUGGESTIONS)
+    )
+    return list(names)
+
+
+class UnknownGenresError(Exception):
+    """Um ou mais gêneros do formulário não existem (gêneros não são criados, CA-13)."""
+
+    def __init__(self, names: list[str]) -> None:
+        self.names = names
+        label = "Gênero inexistente" if len(names) == 1 else "Gêneros inexistentes"
+        super().__init__(f"{label}: {', '.join(names)}.")
+
+
+async def create_movie(db: AsyncSession, data: MovieInput) -> MovieDetail:
+    """Cadastra um filme; o id_filme é gerado aqui (constituição, seção 4.4)."""
+
+    genres = await _genres_by_name(db, data.generos)
+    directors = await _directors_by_name(db, data.diretores)
+    movie = DimMovie(
+        id_filme=str(uuid4()),
+        genres=genres,
+        people=directors,
+        **_editable_fields(data),
+    )
+    db.add(movie)
+    await db.commit()
+
+    detail = await get_movie(db, movie.sk_movie_id)
+    assert detail is not None  # acabou de ser criado
+    return detail
+
+
+async def update_movie(db: AsyncSession, sk_movie_id: str, data: MovieInput) -> MovieDetail | None:
+    """Atualiza os campos editáveis de um filme; None se ele não existe."""
+
+    movie = await db.scalar(
+        select(DimMovie)
+        .where(DimMovie.sk_movie_id == sk_movie_id)
+        .options(selectinload(DimMovie.genres), selectinload(DimMovie.people))
+    )
+    if movie is None:
+        return None
+
+    genres = await _genres_by_name(db, data.generos)
+    directors = await _directors_by_name(db, data.diretores)
+    for column, value in _editable_fields(data).items():
+        setattr(movie, column, value)
+    # O default de titulo_normalizado só roda no insert (plan 003, DEC-7).
+    movie.titulo_normalizado = normalize_title(data.titulo)
+    movie.genres = genres
+    # `people` também guarda roteiristas e atores, que o formulário não edita (CA-22).
+    movie.people = [
+        person for person in movie.people if person.tipo_pessoa != "Diretor"
+    ] + directors
+    await db.commit()
+    return await get_movie(db, sk_movie_id)
+
+
+async def delete_movie(db: AsyncSession, sk_movie_id: str) -> bool:
+    """Remove o filme definitivamente; False se ele não existia (constituição, seção 4.5).
+
+    As chaves estrangeiras com ON DELETE CASCADE apagam avaliações, vínculos, métricas
+    e o resumo de avaliações (o PRAGMA foreign_keys é ligado em db/session.py).
+    Pessoas, gêneros e produtoras continuam cadastrados.
+    """
+
+    result = await db.execute(delete(DimMovie).where(DimMovie.sk_movie_id == sk_movie_id))
+    await db.commit()
+    return result.rowcount > 0
+
+
+def _editable_fields(data: MovieInput) -> dict[str, Any]:
+    """Colunas de `dim_movies` que o formulário edita."""
+
+    return {
+        "titulo": data.titulo,
+        "data_lancamento": data.data_lancamento,
+        "ano_lancamento": data.ano_lancamento,
+        "status_filme": data.status_filme,
+        "duracao_minutos": data.duracao_minutos,
+        "sinopse": data.sinopse,
+        "url_poster": data.url_poster,
+        "url_backdrop": data.url_backdrop,
+    }
+
+
+async def _genres_by_name(db: AsyncSession, names: list[str]) -> list[DimGenre]:
+    """Gêneros pelo nome, na ordem pedida; UnknownGenresError se algum não existir."""
+
+    if not names:
+        return []
+    found = {
+        genre.nome_genero: genre
+        for genre in await db.scalars(select(DimGenre).where(DimGenre.nome_genero.in_(names)))
+    }
+    missing = [name for name in names if name not in found]
+    if missing:
+        raise UnknownGenresError(missing)
+    return [found[name] for name in names]
+
+
+async def _directors_by_name(db: AsyncSession, names: list[str]) -> list[DimPerson]:
+    """Diretores pelo nome exato: reaproveita os existentes e cria os demais (spec 003, D-3).
+
+    O par (nome, tipo) é único no banco, então o nome exato acha no máximo um diretor.
+    """
+
+    if not names:
+        return []
+    existing = {
+        person.nome_pessoa: person
+        for person in await db.scalars(
+            select(DimPerson).where(
+                DimPerson.tipo_pessoa == "Diretor", DimPerson.nome_pessoa.in_(names)
+            )
+        )
+    }
+    return [
+        existing.get(name) or DimPerson(nome_pessoa=name, tipo_pessoa="Diretor") for name in names
+    ]

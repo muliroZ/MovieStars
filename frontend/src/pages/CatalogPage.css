@@ -26,6 +26,16 @@
   flex: 1 1 280px;
 }
 
+.catalog__new {
+  padding: 0.6rem 1rem;
+  font-weight: 600;
+  color: var(--color-bg);
+  white-space: nowrap;
+  text-decoration: none;
+  background: var(--color-accent);
+  border-radius: var(--radius);
+}
+
 .catalog__content {
   display: flex;
   flex-direction: column;

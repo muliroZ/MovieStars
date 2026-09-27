@@ -2,7 +2,7 @@
 
 | Campo          | Valor                                                  |
 |----------------|--------------------------------------------------------|
-| Status         | Aprovada                                               |
+| Status         | Concluída                                              |
 | Depende de     | 001 (catálogo), 002 (página de detalhes)               |
 | Bloqueia       | —                                                      |
 | Referências    | `specs/constitution.md` (seções 1, 4.3, 4.4, 4.5, 5.2, 5.3) |

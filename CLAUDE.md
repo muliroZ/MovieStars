@@ -91,8 +91,16 @@ bun run lint
   `formatDuration`, `formatMoney` (pt-BR). Componentes reutilizáveis:
   `Poster` (imagem padrão), `StarRating`, `NameList` (10 nomes + "Mostrar
   todos"), `FinancialTable`, `ReviewList`.
-- Rotas do frontend: `/` (catálogo) e `/filmes/:skMovieId` (detalhes). O
-  cartão passa `state.catalogSearch` para o "Voltar ao catálogo".
+- Rotas do frontend: `/` (catálogo), `/filmes/novo` (cadastro),
+  `/filmes/:skMovieId` (detalhes) e `/filmes/:skMovieId/editar` (edição). O
+  cartão passa `state.catalogSearch`, lido por `utils/navigation.ts`, para o
+  "Voltar ao catálogo".
+- `frontend/src/utils/movieForm.ts`: validação do formulário de filme (mesmas
+  regras e mensagens do `MovieInput` do backend) e conversão para a API.
+  Componentes do formulário: `GenrePicker`, `DirectorPicker`, `ConfirmDialog`;
+  mensagens de sucesso com `useFlash()` / `FlashProvider`.
+- `backend/app/core/errors.py`: tradução das mensagens de validação (422)
+  para o português.
 - `specs/`: constituição e features.
 - `data/bases_atv_dev1/` e `data/bases_atv_dev_2/`: CSVs de carga inicial
   (versionados). O banco `backend/moviestars.db` ocupa ~550 MB
@@ -127,6 +135,18 @@ bun run lint
   para notas individuais (mesmo arredondamento em todo lugar).
 - **Lucro:** o serviço devolve `lucro_*` como `null` quando falta orçamento
   ou receita (spec 002, D-5); o banco não é alterado.
+- **`nome_normalizado` (dim_people):** como `titulo_normalizado`, só é
+  preenchido no insert. Nomes de pessoas não são editados pela aplicação.
+- **Edição de filme:** `movie.people` guarda diretores, roteiristas e atores;
+  o formulário troca só os diretores (`update_movie`). Não substitua a lista
+  inteira.
+- **Remoção de filme:** é um `DELETE` direto; os dependentes somem pelo
+  `ON DELETE CASCADE` (precisa do `PRAGMA foreign_keys=ON`).
+- **Validação duplicada:** regras e mensagens do formulário estão em
+  `backend/app/movies/schemas.py` (`MovieInput`) e em
+  `frontend/src/utils/movieForm.ts`. Mudou uma, mude a outra.
+- **Mensagens de 422:** tipos novos de erro do Pydantic precisam de tradução
+  em `core/errors.py` (senão caem em "Valor inválido.").
 
 ## Limites
 

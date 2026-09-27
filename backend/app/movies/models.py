@@ -47,6 +47,15 @@ def _normalized_title(context: DefaultExecutionContext) -> str:
     return normalize_title(context.get_current_parameters()["titulo"])
 
 
+def _normalized_person_name(context: DefaultExecutionContext) -> str:
+    """Valor padrão de `nome_normalizado`: o `nome_pessoa` da própria linha, normalizado.
+
+    Como em `_normalized_title`, só roda no insert (nomes de pessoas não são editados).
+    """
+
+    return normalize_title(context.get_current_parameters()["nome_pessoa"])
+
+
 bridge_movie_genre = Table(
     "bridge_movie_genre",
     Base.metadata,
@@ -196,6 +205,8 @@ class DimPerson(Base):
             "tipo_pessoa IN (" + ", ".join(f"'{value}'" for value in PERSON_TYPES) + ")",
             name="tipo_pessoa_valido",
         ),
+        # Sugestões de diretor sem diferenciar acentos (feature 003).
+        Index("ix_dim_people_tipo_nome_normalizado", "tipo_pessoa", "nome_normalizado"),
     )
 
     sk_person_id: Mapped[str] = mapped_column(
@@ -203,6 +214,10 @@ class DimPerson(Base):
     )
     nome_pessoa: Mapped[str] = mapped_column(String(255), index=True)
     tipo_pessoa: Mapped[PersonType] = mapped_column(String(20))
+    # Usada na busca por nome; preenchida automaticamente a partir de `nome_pessoa`.
+    nome_normalizado: Mapped[str] = mapped_column(
+        String(255), default=_normalized_person_name, server_default=""
+    )
 
     movies: Mapped[list[DimMovie]] = relationship(
         secondary=bridge_movie_person, back_populates="people"

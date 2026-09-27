@@ -78,6 +78,9 @@ function CatalogPage() {
           MovieStars
         </Link>
         <SearchBar value={searchInput} onChange={handleSearchChange} />
+        <Link to="/filmes/novo" state={{ catalogSearch: searchParams.size ? `?${searchParams}` : '' }} className="catalog__new">
+          Novo filme
+        </Link>
       </header>
 
       <main className="catalog__content">

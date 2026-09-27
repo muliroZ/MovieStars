@@ -1,5 +1,5 @@
-import type { MovieDetail, MovieListItem, Page, Review } from '../types/movie'
-import { apiGet } from './client'
+import type { MovieDetail, MovieInput, MovieListItem, Page, Review } from '../types/movie'
+import { apiGet, apiSend } from './client'
 
 export interface ListMoviesParams {
   page: number
@@ -36,4 +36,29 @@ export function listMovieReviews(
     { page, page_size: pageSize },
     signal,
   )
+}
+
+/** POST /movies: cadastra um filme e devolve os detalhes dele. */
+export function createMovie(input: MovieInput): Promise<MovieDetail> {
+  return apiSend<MovieDetail>('POST', '/movies', input)
+}
+
+/** PUT /movies/{id}: atualiza os campos editáveis e devolve os detalhes. */
+export function updateMovie(skMovieId: string, input: MovieInput): Promise<MovieDetail> {
+  return apiSend<MovieDetail>('PUT', `/movies/${encodeURIComponent(skMovieId)}`, input)
+}
+
+/** DELETE /movies/{id}: remove o filme definitivamente. */
+export function deleteMovie(skMovieId: string): Promise<void> {
+  return apiSend<void>('DELETE', `/movies/${encodeURIComponent(skMovieId)}`)
+}
+
+/** GET /genres: nomes dos gêneros em ordem alfabética. */
+export function listGenres(signal?: AbortSignal): Promise<string[]> {
+  return apiGet<string[]>('/genres', {}, signal)
+}
+
+/** GET /directors: até 10 sugestões de diretores pelo nome. */
+export function searchDirectors(search: string, signal?: AbortSignal): Promise<string[]> {
+  return apiGet<string[]>('/directors', { search }, signal)
 }

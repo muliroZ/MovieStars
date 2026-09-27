@@ -1,0 +1,32 @@
+/* Mensagem de sucesso fixa no topo, centralizada, acima do conteúdo. */
+.flash {
+  position: fixed;
+  top: 1rem;
+  left: 50%;
+  z-index: 10;
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  width: max-content;
+  max-width: calc(100% - 2rem);
+  padding: 0.7rem 0.8rem 0.7rem 1.1rem;
+  color: #0b2a12;
+  background: #7ee2a0;
+  border-radius: var(--radius);
+  box-shadow: 0 6px 20px rgb(0 0 0 / 35%);
+  transform: translateX(-50%);
+}
+
+.flash__message {
+  margin: 0;
+  font-weight: 600;
+}
+
+.flash__close {
+  padding: 0 0.3rem;
+  font-size: 1.3rem;
+  line-height: 1;
+  color: inherit;
+  background: none;
+  border: none;
+}

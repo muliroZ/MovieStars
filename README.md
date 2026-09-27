@@ -77,15 +77,16 @@ bun run lint
 ### Depois de atualizar o repositório
 
 Se novas migrações chegarem (por exemplo, a `0002_titulo_normalizado` da
-feature 001), aplique-as antes de subir a API:
+feature 001 e a `0003_nome_normalizado_pessoas` da feature 003), aplique-as
+antes de subir a API:
 
 ```bash
 cd backend
 .venv/bin/alembic upgrade head
 ```
 
-A carga não precisa ser refeita: a migração preenche os filmes que já estão
-no banco.
+A carga não precisa ser refeita: as migrações preenchem os filmes e as
+pessoas que já estão no banco.
 
 ## Dados
 
@@ -138,7 +139,7 @@ implementação, com revisão ao final de cada etapa.
 | 000 — Carga de dados      | Concluída       |
 | 001 — Catálogo e busca    | Concluída       |
 | 002 — Detalhes e média    | Concluída       |
-| 003 — Gerenciar filmes    | Plan aprovado   |
+| 003 — Gerenciar filmes    | Concluída       |
 | 004 — Avaliações          | Não iniciada    |
 
 ## Decisões
@@ -225,3 +226,29 @@ Resumo; o texto completo está na seção 4 da
 - **Voltar ao catálogo:** retorna à mesma página e busca de onde se saiu.
 - **Formatações compartilhadas** ficam em `frontend/src/utils/format.ts`
   (pasta acrescentada à constituição).
+
+### Gerenciar filmes (feature 003)
+
+- **Onde:** "Novo filme" no cabeçalho do catálogo; "Editar" e "Excluir" na
+  página de detalhes.
+- **Campos:** título, ano e status são obrigatórios; também data de
+  lançamento, duração, sinopse, URLs do pôster e da imagem de fundo, gêneros
+  e diretores. Roteiro, elenco, produtoras e dados financeiros continuam
+  vindo só da carga.
+- **Validação igual na tela e na API:** o formulário avisa antes de enviar,
+  e a API recusa com as mesmas mensagens em português. Os erros 422 de toda
+  a API passaram a vir em português (`backend/app/core/errors.py`).
+- **Gêneros e diretores pelo nome:** os nomes são únicos no banco. Gêneros só
+  entre os existentes. Diretores: sugestões sem acentos enquanto se digita;
+  um nome digitado reaproveita o diretor existente só se for idêntico, senão
+  cria um diretor novo (marcado como "novo" no formulário).
+- **Busca de diretores rápida:** `dim_people` ganhou `nome_normalizado` com
+  índice (migração 0003); cada busca leva poucos milissegundos entre os
+  65.200 diretores.
+- **Edição:** troca só os diretores do filme, preservando roteiristas e
+  elenco, e recalcula o título normalizado para a busca e a ordem.
+- **Remoção definitiva:** pede confirmação mostrando quantas avaliações serão
+  apagadas; o banco apaga em cascata avaliações, vínculos e métricas.
+  Pessoas, gêneros e produtoras continuam cadastrados.
+- **Mensagens de sucesso** ("Filme cadastrado.", "Filme atualizado.", "Filme
+  excluído.") aparecem no topo e somem em 5 s.

@@ -2,7 +2,7 @@
 
 | Campo       | Valor                                                 |
 |-------------|-------------------------------------------------------|
-| Status      | Aprovado                                              |
+| Status      | Concluído                                             |
 | Spec        | [`spec.md`](spec.md) (aprovada)                       |
 | Referências | `specs/constitution.md` (seções 4.3, 4.4, 4.5, 5.1, 5.2, 5.3, 6); plans da 001 (DEC-1, DEC-2) e da 002 |
 
@@ -61,7 +61,7 @@ Validações no schema Pydantic (CA-6 a CA-13, CA-19):
 | Campo            | Regra                                                        |
 |------------------|--------------------------------------------------------------|
 | `titulo`         | sem espaços nas pontas; 1 a 500 caracteres                   |
-| `ano_lancamento` | inteiro entre 1888 e o ano atual + 10 (calculado na hora)    |
+| `ano_lancamento` | inteiro entre 1888 e o ano atual + 10 (calculado na hora); mensagem "Deve estar entre 1888 e <ano atual + 10>." (aprovada na T-05) |
 | `status_filme`   | `Literal["Lançado", "Pós-Produção", "Em Produção", "Planejado"]` |
 | `data_lancamento`| data ou `null`; se houver, o ano dela = `ano_lancamento`     |
 | `duracao_minutos`| inteiro de 1 a 1.000 ou `null`                               |
@@ -84,12 +84,18 @@ mensagens dos tipos usados no projeto. Alguns exemplos:
 | Tipo do Pydantic                     | Mensagem                              |
 |--------------------------------------|---------------------------------------|
 | `missing`                            | "Campo obrigatório."                  |
-| `string_too_short`, `string_too_long`| "Deve ter entre X e Y caracteres."    |
-| `greater_than_equal`, `less_than_equal` | "Deve ser no mínimo X." / "no máximo Y." |
-| `int_parsing`, `date_from_datetime_parsing`, `date_parsing` | "Número inválido." / "Data inválida." |
+| `string_too_short`                   | "Campo obrigatório." (mínimo 1) / "Deve ter pelo menos X caracteres." |
+| `string_too_long`                    | "Deve ter no máximo X caracteres."    |
+| `greater_than_equal`, `less_than_equal` | "Deve ser no mínimo X." / "Deve ser no máximo Y." |
+| `int_parsing`                        | "Deve ser um número inteiro."         |
+| `date_*` (`date_parsing` etc.)       | "Data inválida."                      |
 | `literal_error`                      | "Valor inválido."                     |
-| `string_pattern_mismatch`            | "Deve começar com http:// ou https://." |
+| `string_pattern_mismatch`            | "Formato inválido." (genérico; a URL tem mensagem própria no validador: "Deve começar com http:// ou https://.") |
 | `value_error` (validadores próprios) | a mensagem do validador, já em português |
+
+*Textos ajustados na implementação (T-03), com aprovação do desenvolvedor:
+cada erro do Pydantic traz só um dos limites, então "entre X e Y" foi
+trocado por mensagens com um limite só.*
 
 Isso vale também para os `422` das features 001 e 002, cujos testes só
 conferem o código de status.
@@ -180,7 +186,7 @@ O React Router dá prioridade ao trecho fixo `novo` sobre `:skMovieId`, então
 | `src/hooks/useFlash.ts`                   | Contexto das mensagens de sucesso: `showFlash(texto)` | CA-31 |
 | `src/components/FlashProvider.tsx`        | Guarda e mostra a mensagem no topo; some em 5 s ou ao fechar | CA-31 |
 | `src/components/GenrePicker.tsx`          | Os 19 gêneros como caixas de seleção em etiquetas   | CA-2, CA-13 |
-| `src/components/DirectorPicker.tsx`       | Campo com sugestões (debounce de 300 ms, a partir de 2 letras); Enter ou clique adiciona; etiquetas removíveis; marca "novo" quando o nome não veio de uma sugestão exata; ignora repetidos | CA-16 a CA-19 |
+| `src/components/DirectorPicker.tsx`       | Campo com sugestões (debounce de 300 ms, a partir de 2 letras); Enter ou clique adiciona; etiquetas removíveis; marca "novo" quando o nome não veio de uma sugestão exata; ignora repetidos. Aprovados na fase 3: botão "Adicionar", texto de ajuda ("Digite ao menos 2 letras para ver sugestões. Enter ou "Adicionar" inclui o nome digitado.") e placeholder "Digite um nome" | CA-16 a CA-19 |
 | `src/components/ConfirmDialog.tsx`        | Diálogo modal com `<dialog>` nativo: título, texto, confirmar e cancelar; Esc cancela | CA-26 |
 | `src/pages/MovieFormPage.tsx`             | Cadastro ou edição (conforme a rota); carrega o filme na edição (`useMovie`); valida, envia, mostra erros do servidor nos campos; ao salvar, vai para os detalhes com `replace` e mensagem | CA-1 a CA-25, CA-32 |
 | `src/pages/MovieDetailPage.tsx`           | Botões "Editar" e "Excluir"; confirmação com o número de avaliações; após excluir, mensagem e volta ao catálogo | CA-20, CA-26 a CA-30 |
@@ -196,7 +202,8 @@ O React Router dá prioridade ao trecho fixo `novo` sobre `:skMovieId`, então
 - **Erros:** aparecem ao sair de cada campo e todos de uma vez ao tentar
   salvar. O foco vai para o primeiro campo com erro.
 - **Erros do servidor (`422`):** `fieldErrors` é associado aos campos pelo
-  `loc`. Qualquer outro erro vira uma mensagem no topo do formulário, e os
+  `loc`, e o topo do formulário mostra "Alguns campos estão inválidos."
+  (texto aprovado na fase 2). Qualquer outro erro vira uma mensagem no topo do formulário, e os
   dados digitados continuam (CA-15).
 - **Envio:** o botão "Salvar" fica desabilitado e mostra "Salvando…" até a
   resposta, o que impede duplo envio.
@@ -204,6 +211,20 @@ O React Router dá prioridade ao trecho fixo `novo` sobre `:skMovieId`, então
   Assim o voltar do navegador não retorna ao formulário. O
   `state.catalogSearch` recebido é repassado, para o "Voltar ao catálogo" da
   002 continuar funcionando.
+
+### Textos e comportamentos aprovados na fase 4
+
+- Títulos das páginas: "Novo filme" e "Editar filme"; aviso "Campos com *
+  são obrigatórios."; primeira opção do Status: "Selecione".
+- Placeholders: Ano "1888 a <ano atual + 10>"; Duração "Vazio = não
+  informada"; URLs "https://".
+- Falhas genéricas (sem resposta da API): "Não foi possível salvar o
+  filme." e "Não foi possível excluir o filme.".
+- Confirmação: título `Excluir "<título>"?`; com 1 avaliação, "A avaliação
+  deste filme também será excluída."; botão durante a ação: "Excluindo…".
+- "Cancelar" e "Voltar ao catálogo" no cadastro retornam à mesma busca e
+  página do catálogo de onde o "Novo filme" foi clicado (mesma regra do
+  "Voltar ao catálogo" da 002).
 
 ## Arquivos
 
@@ -317,6 +338,17 @@ Tempo de `GET /directors` com termos curtos e longos, de `POST`, `PUT` e
   formulário já enviado.
 
 ## Riscos
+
+- **RNF-1: confirmado na T-09 (2026-09-26),** numa cópia do `moviestars.db`
+  (o original não mudou: 95.645 filmes, 424.656 pessoas e 43.666 avaliações
+  antes e depois). Pior tempo em 5 execuções:
+
+  | Operação                                         | Tempo  |
+  |--------------------------------------------------|--------|
+  | `GET /directors?search=an` (termo curto, muitos resultados) | 55 ms |
+  | `GET /directors?search=rodri`                    | 10 ms  |
+  | `GET /directors?search=Fernando Meirelles`       | 7 ms   |
+  | `POST`, `PUT` e `DELETE` (pior operação em 5 ciclos) | 21 ms |
 
 - **Migração 0003 no `moviestars.db`:** preenche 424.656 pessoas. A
   estimativa é de alguns segundos, e o Alembic desfaz tudo se falhar.

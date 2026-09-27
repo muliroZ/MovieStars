@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react'
-import { Link, useLocation, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 
+import { ApiError, errorMessage } from '../api/client'
+import { deleteMovie } from '../api/movies'
+import ConfirmDialog from '../components/ConfirmDialog'
 import EmptyState from '../components/EmptyState'
 import ErrorState from '../components/ErrorState'
 import FinancialTable from '../components/FinancialTable'
@@ -9,24 +12,13 @@ import NameList from '../components/NameList'
 import Poster from '../components/Poster'
 import ReviewList from '../components/ReviewList'
 import StarRating from '../components/StarRating'
+import { useFlash } from '../hooks/useFlash'
 import { useMovie } from '../hooks/useMovie'
 import { type ReviewsResult, useMovieReviews } from '../hooks/useMovieReviews'
 import type { MovieDetail } from '../types/movie'
 import { formatDate, formatDuration } from '../utils/format'
+import { catalogPath, catalogSearchFrom } from '../utils/navigation'
 import './MovieDetailPage.css'
-
-/** Endereço do catálogo de onde o usuário veio (estado passado pelo cartão), ou `/`. */
-function catalogPath(state: unknown): string {
-  if (
-    typeof state === 'object' &&
-    state !== null &&
-    'catalogSearch' in state &&
-    typeof state.catalogSearch === 'string'
-  ) {
-    return `/${state.catalogSearch}`
-  }
-  return '/' // endereço aberto direto: início do catálogo (CA-23)
-}
 
 function MovieDetailPage() {
   const { skMovieId = '' } = useParams()
@@ -70,7 +62,12 @@ function MovieDetailPage() {
       )}
       {movie.status === 'success' && (
         // key: ao trocar de filme, listas expandidas etc. recomeçam do zero.
-        <MovieContent key={movie.data.sk_movie_id} movie={movie.data} reviews={reviews} />
+        <MovieContent
+          key={movie.data.sk_movie_id}
+          movie={movie.data}
+          reviews={reviews}
+          catalogState={location.state}
+        />
       )}
     </div>
   )
@@ -79,9 +76,36 @@ function MovieDetailPage() {
 interface MovieContentProps {
   movie: MovieDetail
   reviews: ReviewsResult
+  /** Estado da navegação, repassado para editar e para voltar ao catálogo. */
+  catalogState: unknown
 }
 
-function MovieContent({ movie, reviews }: MovieContentProps) {
+function MovieContent({ movie, reviews, catalogState }: MovieContentProps) {
+  const navigate = useNavigate()
+  const { showFlash } = useFlash()
+  const catalogSearch = catalogSearchFrom(catalogState)
+  const [confirming, setConfirming] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
+
+  async function handleDelete() {
+    setDeleting(true)
+    setDeleteError(null)
+    try {
+      await deleteMovie(movie.sk_movie_id)
+      showFlash('Filme excluído.')
+      // Volta ao catálogo de onde veio (CA-27); replace: o filme não existe mais.
+      navigate(catalogPath(catalogState), { replace: true })
+    } catch (error) {
+      setDeleting(false)
+      setDeleteError(
+        error instanceof ApiError && error.status === 404
+          ? 'Filme não encontrado.'
+          : errorMessage(error, 'Não foi possível excluir o filme.'),
+      )
+    }
+  }
+
   return (
     <main className="movie-detail__content">
       <Backdrop src={movie.url_backdrop} />
@@ -94,6 +118,25 @@ function MovieContent({ movie, reviews }: MovieContentProps) {
         />
         <div className="movie-detail__info">
           <h1 className="movie-detail__title">{movie.titulo}</h1>
+          <div className="movie-detail__actions">
+            <Link
+              to={`/filmes/${movie.sk_movie_id}/editar`}
+              state={{ catalogSearch }}
+              className="movie-detail__edit"
+            >
+              Editar
+            </Link>
+            <button
+              type="button"
+              className="movie-detail__delete"
+              onClick={() => {
+                setDeleteError(null)
+                setConfirming(true)
+              }}
+            >
+              Excluir
+            </button>
+          </div>
           <StarRating average={movie.media_estrelas} count={movie.qtd_avaliacoes} />
           <dl className="movie-detail__facts">
             <dt>Ano</dt>
@@ -135,6 +178,25 @@ function MovieContent({ movie, reviews }: MovieContentProps) {
       <div className="movie-detail__section">
         <ReviewList reviews={reviews} />
       </div>
+
+      <ConfirmDialog
+        open={confirming}
+        title={`Excluir "${movie.titulo.trim()}"?`}
+        confirmLabel="Excluir definitivamente"
+        busyLabel="Excluindo…"
+        busy={deleting}
+        error={deleteError}
+        onConfirm={handleDelete}
+        onCancel={() => setConfirming(false)}
+      >
+        {movie.qtd_avaliacoes > 0 && (
+          <p>
+            {movie.qtd_avaliacoes === 1
+              ? 'A avaliação deste filme também será excluída.'
+              : `As ${movie.qtd_avaliacoes.toLocaleString('pt-BR')} avaliações deste filme também serão excluídas.`}
+          </p>
+        )}
+      </ConfirmDialog>
     </main>
   )
 }

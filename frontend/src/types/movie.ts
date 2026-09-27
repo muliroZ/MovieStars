@@ -62,3 +62,21 @@ export interface Review {
   /** Data e hora em UTC ("…Z"). */
   created_at: string
 }
+
+export type MovieStatus = 'Lançado' | 'Pós-Produção' | 'Em Produção' | 'Planejado'
+
+/** Espelha `MovieInput` do backend: corpo do cadastro (POST) e da edição (PUT). */
+export interface MovieInput {
+  titulo: string
+  data_lancamento: string | null
+  ano_lancamento: number
+  status_filme: MovieStatus
+  duracao_minutos: number | null
+  sinopse: string | null
+  url_poster: string | null
+  url_backdrop: string | null
+  /** Nomes dos gêneros (únicos no banco). */
+  generos: string[]
+  /** Nomes dos diretores; nome exato existente é reaproveitado, os outros são criados. */
+  diretores: string[]
+}

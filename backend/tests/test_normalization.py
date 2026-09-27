@@ -3,7 +3,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 from app.db.base import Base
-from app.movies.models import DimMovie
+from app.movies.models import DimMovie, DimPerson
 from app.movies.normalization import normalize_title
 
 
@@ -37,4 +37,15 @@ def test_orm_insert_fills_titulo_normalizado() -> None:
         session.commit()
 
         assert session.get(DimMovie, "m1").titulo_normalizado == "a la recherche"
+    engine.dispose()
+
+
+def test_orm_insert_fills_nome_normalizado() -> None:
+    engine = create_engine("sqlite://")
+    Base.metadata.create_all(engine)
+    with Session(engine) as session:
+        session.add(DimPerson(sk_person_id="p1", nome_pessoa="Kátia Lund", tipo_pessoa="Diretor"))
+        session.commit()
+
+        assert session.get(DimPerson, "p1").nome_normalizado == "katia lund"
     engine.dispose()

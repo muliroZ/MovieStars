@@ -82,6 +82,35 @@
   overflow-wrap: anywhere;
 }
 
+.movie-detail__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.movie-detail__edit,
+.movie-detail__delete {
+  padding: 0.45rem 0.9rem;
+  font-size: 0.9rem;
+  border-radius: var(--radius);
+}
+
+.movie-detail__edit {
+  color: var(--color-text);
+  text-decoration: none;
+  border: 1px solid var(--color-border);
+}
+
+.movie-detail__edit:hover {
+  border-color: var(--color-accent);
+}
+
+.movie-detail__delete {
+  color: var(--color-danger);
+  background: transparent;
+  border: 1px solid currentcolor;
+}
+
 .movie-detail__facts {
   display: grid;
   grid-template-columns: auto 1fr;

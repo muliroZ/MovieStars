@@ -2,7 +2,7 @@
 
 | Campo  | Valor                                                   |
 |--------|---------------------------------------------------------|
-| Status | Em revisão                                              |
+| Status | Concluído (2026-09-26)                                  |
 | Spec   | [`spec.md`](spec.md) (aprovada)                         |
 | Plan   | [`plan.md`](plan.md) (aprovado)                         |
 
@@ -15,7 +15,7 @@ ela passa. Os comandos de backend rodam em `backend/` e os de frontend em
 
 ## Fase 0 — Base do backend
 
-- [ ] **T-01. `nome_normalizado` em `dim_people` e migração 0003** (CA-16, DEC-4)
+- [x] **T-01. `nome_normalizado` em `dim_people` e migração 0003** (CA-16, DEC-4)
   - `models.py`: coluna com `default` calculado a partir de `nome_pessoa` e
     `server_default=""`; índice `ix_dim_people_tipo_nome_normalizado`.
   - Migração `0003_nome_normalizado_pessoas.py`: coluna, preenchimento em
@@ -31,13 +31,13 @@ ela passa. Os comandos de backend rodam em `backend/` e os de frontend em
       da 0003 ficam preenchidas;
     - `alembic check` não detecta diferenças.
 
-- [ ] **T-02. Aplicar a migração 0003 no `moviestars.db`**
+- [x] **T-02. Aplicar a migração 0003 no `moviestars.db`**
   - Verificação:
     - `alembic current` mostra `0003_nome_normalizado_pessoas (head)`;
     - nenhuma pessoa tem `nome_normalizado` vazio;
     - `EXPLAIN QUERY PLAN` da busca de diretores usa o índice novo.
 
-- [ ] **T-03. Mensagens de validação em português** (CA-14, DEC-8)
+- [x] **T-03. Mensagens de validação em português** (CA-14, DEC-8)
   - `app/core/errors.py` com o tratador de `RequestValidationError`;
     registro em `create_app`.
   - Testes:
@@ -47,7 +47,7 @@ ela passa. Os comandos de backend rodam em `backend/` e os de frontend em
 
 ## Fase 1 — API de gerenciamento
 
-- [ ] **T-04. `GET /genres` e `GET /directors`** (CA-2, CA-13, CA-16)
+- [x] **T-04. `GET /genres` e `GET /directors`** (CA-2, CA-13, CA-16)
   - `list_genres` e `search_directors` no serviço; `genres_router` e
     `directors_router`, registrados em `app/api/v1/router.py`.
   - Testes:
@@ -60,7 +60,7 @@ ela passa. Os comandos de backend rodam em `backend/` e os de frontend em
     - termo de 1 caractere dá 422.
   - Verificação: `pytest` e `ruff check .` passam.
 
-- [ ] **T-05. Schema `MovieInput` e validações** (CA-6 a CA-12, CA-19)
+- [x] **T-05. Schema `MovieInput` e validações** (CA-6 a CA-12, CA-19)
   - Regras da tabela do plan, com mensagens em português nos validadores
     próprios (data e ano; URL).
   - Testes chamando o schema:
@@ -71,7 +71,7 @@ ela passa. Os comandos de backend rodam em `backend/` e os de frontend em
     - o limite do ano segue o ano atual + 10.
   - Verificação: `pytest` passa.
 
-- [ ] **T-06. `POST /api/v1/movies`** (CA-3 a CA-5, CA-13, CA-14, CA-17, CA-18)
+- [x] **T-06. `POST /api/v1/movies`** (CA-3 a CA-5, CA-13, CA-14, CA-17, CA-18)
   - `create_movie`:
     - confere os gêneros;
     - resolve os diretores (nome exato reaproveita, os outros são criados);
@@ -90,7 +90,7 @@ ela passa. Os comandos de backend rodam em `backend/` e os de frontend em
     - campos inválidos dão 422 com a mensagem em português no `loc` certo.
   - Verificação: `pytest` e `ruff check .` passam.
 
-- [ ] **T-07. `PUT /api/v1/movies/{sk_movie_id}`** (CA-21 a CA-23, CA-25)
+- [x] **T-07. `PUT /api/v1/movies/{sk_movie_id}`** (CA-21 a CA-23, CA-25)
   - `update_movie`:
     - atualiza os campos;
     - recalcula `titulo_normalizado`;
@@ -105,7 +105,7 @@ ela passa. Os comandos de backend rodam em `backend/` e os de frontend em
     - corpo inválido dá 422.
   - Verificação: `pytest` e `ruff check .` passam.
 
-- [ ] **T-08. `DELETE /api/v1/movies/{sk_movie_id}`** (CA-27 a CA-29)
+- [x] **T-08. `DELETE /api/v1/movies/{sk_movie_id}`** (CA-27 a CA-29)
   - `delete_movie` com `DELETE` direto e a cascata do banco; rota com 204.
   - Testes:
     - 204 sem corpo;
@@ -116,7 +116,7 @@ ela passa. Os comandos de backend rodam em `backend/` e os de frontend em
     - filme inexistente dá 404.
   - Verificação: `pytest` e `ruff check .` passam.
 
-- [ ] **T-09. Desempenho numa cópia do banco** (RNF-1, DEC-12)
+- [x] **T-09. Desempenho numa cópia do banco** (RNF-1, DEC-12)
   - Copiar o `moviestars.db` para o scratchpad e medir:
     - `GET /directors` com "an", "rodri" e um nome completo;
     - `POST`, `PUT` e `DELETE` de um filme com 3 gêneros e 2 diretores.
@@ -126,7 +126,7 @@ ela passa. Os comandos de backend rodam em `backend/` e os de frontend em
 
 ## Fase 2 — Base do frontend
 
-- [ ] **T-10. Cliente, tipos e chamadas à API** (CA-14, CA-15)
+- [x] **T-10. Cliente, tipos e chamadas à API** (CA-14, CA-15)
   - `client.ts`: `apiSend(método, caminho, corpo)`, tratando 204 sem corpo;
     `ApiError.fieldErrors` montado a partir do `detail` do 422 (campo →
     mensagem).
@@ -135,7 +135,7 @@ ela passa. Os comandos de backend rodam em `backend/` e os de frontend em
     `searchDirectors`.
   - Verificação: build e lint passam, sem `any`.
 
-- [ ] **T-11. `utils/movieForm.ts`** (CA-6 a CA-13, CA-19)
+- [x] **T-11. `utils/movieForm.ts`** (CA-6 a CA-13, CA-19)
   - Valores do formulário ↔ `MovieInput` (duração 0 importada vira vazio);
     `validateMovieForm`, com as mesmas regras e mensagens da API.
   - Verificação: build e lint passam. Um script temporário com `bun` (fora
@@ -144,7 +144,7 @@ ela passa. Os comandos de backend rodam em `backend/` e os de frontend em
     - a data preenchendo o ano;
     - a conversão ida e volta de um `MovieDetail`.
 
-- [ ] **T-12. Mensagens de sucesso (`useFlash` e `FlashProvider`)** (CA-31, DEC-9)
+- [x] **T-12. Mensagens de sucesso (`useFlash` e `FlashProvider`)** (CA-31, DEC-9)
   - Contexto com `showFlash(texto)`; a mensagem aparece no topo, com botão
     de fechar, e some em 5 s. O `FlashProvider` envolve as rotas em
     `App.tsx`.
@@ -153,12 +153,12 @@ ela passa. Os comandos de backend rodam em `backend/` e os de frontend em
 
 ## Fase 3 — Componentes do formulário
 
-- [ ] **T-13. `GenrePicker`** (CA-2, CA-13)
+- [x] **T-13. `GenrePicker`** (CA-2, CA-13)
   - Os gêneros vindos de `GET /genres`, como caixas de seleção em
     etiquetas; seleção múltipla; estado de carregamento e erro.
   - Verificação: build e lint passam; conferido na T-20.
 
-- [ ] **T-14. `DirectorPicker`** (CA-16 a CA-19)
+- [x] **T-14. `DirectorPicker`** (CA-16 a CA-19)
   - O campo tem:
     - sugestões a partir de 2 letras, com debounce de 300 ms;
     - navegação pelas sugestões com as setas, e adição com Enter ou clique;
@@ -169,14 +169,14 @@ ela passa. Os comandos de backend rodam em `backend/` e os de frontend em
     - erro de nome longo.
   - Verificação: build e lint passam; conferido na T-20.
 
-- [ ] **T-15. `ConfirmDialog`** (CA-26, DEC-10)
+- [x] **T-15. `ConfirmDialog`** (CA-26, DEC-10)
   - `<dialog>` nativo com título, texto, botões confirmar e cancelar, e Esc
     para cancelar; o botão de confirmar fica desabilitado durante a ação.
   - Verificação: build e lint passam; conferido na T-20.
 
 ## Fase 4 — Páginas
 
-- [ ] **T-16. Cadastro: `MovieFormPage` e botão "Novo filme"** (CA-1 a CA-15, CA-31)
+- [x] **T-16. Cadastro: `MovieFormPage` e botão "Novo filme"** (CA-1 a CA-15, CA-31)
   - Rota `/filmes/novo`; botão "Novo filme" no cabeçalho do catálogo.
   - O formulário:
     - valida ao sair de cada campo e tudo de uma vez ao salvar, com foco no
@@ -188,7 +188,7 @@ ela passa. Os comandos de backend rodam em `backend/` e os de frontend em
   - Verificação: build e lint passam; com a API (na cópia do banco), um
     filme cadastrado abre nos detalhes com a mensagem.
 
-- [ ] **T-17. Edição** (CA-20 a CA-25, CA-32)
+- [x] **T-17. Edição** (CA-20 a CA-25, CA-32)
   - Rota `/filmes/:skMovieId/editar`; botão "Editar" nos detalhes.
   - Formulário preenchido a partir de `useMovie`; "Cancelar" volta aos
     detalhes; carregando, erro com "Tentar novamente" e "Filme não
@@ -196,7 +196,7 @@ ela passa. Os comandos de backend rodam em `backend/` e os de frontend em
     salvar, "Filme atualizado.". O `catalogSearch` é repassado.
   - Verificação: build e lint passam; conferido na T-20.
 
-- [ ] **T-18. Remoção** (CA-26 a CA-30)
+- [x] **T-18. Remoção** (CA-26 a CA-30)
   - Botão "Excluir" nos detalhes; `ConfirmDialog` com o título e a
     quantidade de avaliações (sem essa frase quando não houver avaliações).
   - Ao confirmar, `deleteMovie`, a mensagem "Filme excluído." e a volta ao
@@ -204,7 +204,7 @@ ela passa. Os comandos de backend rodam em `backend/` e os de frontend em
     mensagem de erro aparece no diálogo.
   - Verificação: build e lint passam; conferido na T-20.
 
-- [ ] **T-19. Layout responsivo** (CA-33)
+- [x] **T-19. Layout responsivo** (CA-33)
   - Formulário em duas colunas a partir de 640 px e uma abaixo; diálogo com
     largura máxima e margens em 360 px.
   - Verificação: 360, 768 e 1280 px sem rolagem horizontal no formulário e
@@ -212,15 +212,55 @@ ela passa. Os comandos de backend rodam em `backend/` e os de frontend em
 
 ## Fase 5 — Verificação e fechamento
 
-- [ ] **T-20. Roteiro no navegador numa cópia do banco** (CA-1 a CA-33, DEC-12)
+- [x] **T-20. Roteiro no navegador numa cópia do banco** (CA-1 a CA-33, DEC-12)
   - Script Playwright (no scratchpad) com a API apontada para a cópia do
     `moviestars.db`, cobrindo os itens da seção "Testes" do plan. Rodar
     também os roteiros da 001 e da 002.
   - Anotar os resultados aqui e apagar a cópia depois.
   - Verificação: todos os itens ok, com os problemas encontrados corrigidos
     antes de marcar; o `moviestars.db` não muda.
+  - **Resultado (2026-09-26):** API apontada para uma cópia do
+    `moviestars.db`. Rodada final: **121 de 121 verificações ok.**
 
-- [ ] **T-21. Documentação** (constituição, seção 6)
+    | Roteiro | Resultado |
+    |---|---|
+    | `check_catalog.py` (001) | 34/34 |
+    | `check_catalog_extra.py` (001) | 8/8 |
+    | `check_detail.py` (002) | 40/40 |
+    | `check_manage.py` (003) | 39/39 |
+
+    `check_manage.py` cobre:
+    - "Novo filme" no catálogo e os 19 gêneros;
+    - erros na tela (obrigatórios, título só com espaços, ano fora da faixa,
+      ano diferente da data, duração 0, URL sem http) e foco no primeiro
+      erro;
+    - a data preenchendo o ano;
+    - cadastro completo com sugestão de diretor, nome "novo" e repetido
+      ignorado; duplo clique cria um único filme; "Filme cadastrado.";
+      título sem espaços nas pontas; filme novo sem avaliações nem
+      financeiro;
+    - o voltar do navegador não retorna ao formulário; o filme novo aparece
+      na busca sem acentos; cadastro mínimo com as ausências explícitas;
+    - edição: formulário preenchido; cancelar não salva; "Filme
+      atualizado."; a busca acha o título novo; o diretor retirado continua
+      nas sugestões; a duração 0 importada aparece vazia; roteiro, elenco e
+      produtoras são preservados; edição de filme inexistente mostra "Filme
+      não encontrado"; API bloqueada ao salvar mantém os dados;
+    - remoção: confirmação com título e contagem; cancelar; falha na remoção
+      com erro no diálogo; "Filme excluído." no catálogo; o endereço do filme
+      removido mostra "Filme não encontrado"; filme sem avaliações não
+      menciona avaliações;
+    - 360, 768 e 1280 px.
+
+    Numa rodada anterior, `check_detail.py` teve um tempo esgotado ao abrir
+    um filme. A investigação não achou erro de renderização nem no console,
+    e a falha não se repetiu com a cópia refeita. Fica registrada como falha
+    pontual não explicada. As falhas das primeiras rodadas de
+    `check_manage.py` eram do script (seletor ambíguo, espera pelos gêneros)
+    e foram corrigidas. O `moviestars.db` terminou igual: 95.645 filmes,
+    424.656 pessoas e 43.666 avaliações. A cópia foi apagada.
+
+- [x] **T-21. Documentação** (constituição, seção 6)
   - `README.md`: decisões da 003, a migração 0003 em "Depois de atualizar o
     repositório" e o status.
   - `CLAUDE.md`:
@@ -230,7 +270,7 @@ ela passa. Os comandos de backend rodam em `backend/` e os de frontend em
       422 traduzidas em `core/errors.py`.
   - Verificação: os caminhos e comandos citados existem.
 
-- [ ] **T-22. Definição de pronto** (constituição, seção 6)
+- [x] **T-22. Definição de pronto** (constituição, seção 6)
   - Backend: `pytest`, `ruff check .`, `ruff format --check .` e
     `alembic check` passam.
   - Frontend: `bun run build` e `bun run lint` passam.
