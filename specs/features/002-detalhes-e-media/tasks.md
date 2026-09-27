@@ -2,7 +2,7 @@
 
 | Campo  | Valor                                                   |
 |--------|---------------------------------------------------------|
-| Status | Aprovado — em implementação                             |
+| Status | Concluído (2026-09-26)                                  |
 | Spec   | [`spec.md`](spec.md) (aprovada)                         |
 | Plan   | [`plan.md`](plan.md) (aprovado)                         |
 
@@ -118,19 +118,19 @@ ela passa. Os comandos de backend rodam em `backend/` e os de frontend em
 
 ## Fase 2 — Componentes da página
 
-- [ ] **T-10. `NameList`** (CA-7 a CA-10)
+- [x] **T-10. `NameList`** (CA-7 a CA-10)
   - Título, até 10 nomes, "Mostrar todos (N)" / "Mostrar menos" e "Não
     informado".
   - Verificação: build e lint passam. Na página de detalhes (T-13), o filme
     com 88 diretores mostra 10 nomes e o botão.
 
-- [ ] **T-11. `FinancialTable`** (CA-11 a CA-14)
+- [x] **T-11. `FinancialTable`** (CA-11 a CA-14)
   - Linhas Orçamento, Receita e Lucro; colunas Real e Dólar. Mostra "Não
     informado", "Não calculado" e o lucro negativo destacado como prejuízo.
   - Verificação: build e lint passam; conferido na T-15 com filmes reais
     nos três cenários.
 
-- [ ] **T-12. `ReviewList`** (CA-17 a CA-22)
+- [x] **T-12. `ReviewList`** (CA-17 a CA-22)
   - Título "Avaliações (N)" e itens com nome, estrelas, comentário e data.
   - Botão "Mostrar mais avaliações" enquanto `hasMore`.
   - Erro de "mostrar mais" com "Tentar de novo".
@@ -139,7 +139,7 @@ ela passa. Os comandos de backend rodam em `backend/` e os de frontend em
 
 ## Fase 3 — Página de detalhes
 
-- [ ] **T-13. `MovieDetailPage` e rota** (CA-1 a CA-6, CA-15, CA-23, CA-25 a CA-27)
+- [x] **T-13. `MovieDetailPage` e rota** (CA-1 a CA-6, CA-15, CA-23, CA-25 a CA-27)
   - Rota `/filmes/:skMovieId` em `App.tsx`.
   - A página tem:
     - a faixa de fundo, que some se não houver imagem ou se ela falhar;
@@ -153,21 +153,45 @@ ela passa. Os comandos de backend rodam em `backend/` e os de frontend em
   - Verificação: build e lint passam; com a API real, um filme abre
     completo, e uma chave inexistente mostra "Filme não encontrado".
 
-- [ ] **T-14. Layout responsivo** (CA-28)
+- [x] **T-14. Layout responsivo** (CA-28)
   - Duas colunas (pôster e informações) a partir de 640 px e uma coluna
     abaixo; a tabela financeira cabe em 360 px.
   - Verificação: em 360 px, 768 px e 1280 px, sem rolagem horizontal.
 
 ## Fase 4 — Verificação e fechamento
 
-- [ ] **T-15. Roteiro no navegador** (CA-1 a CA-28)
+- [x] **T-15. Roteiro no navegador** (CA-1 a CA-28)
   - Script Playwright (no scratchpad) contra a API e o `moviestars.db`
     reais, cobrindo os itens da seção "Testes" do plan.
   - Anotar os resultados aqui.
   - Verificação: todos os itens ok, com os problemas encontrados corrigidos
     antes de marcar.
+  - **Resultado (2026-09-26):** `check_detail.py` rodou contra a API e o
+    `moviestars.db` reais. **40 de 40 verificações ok.**
 
-- [ ] **T-16. Documentação** (constituição, seção 6)
+    | Área | O que foi conferido | CAs |
+    |---|---|---|
+    | Acesso | cartão de `?search=ring&page=2` abre o mesmo filme; recarregar mantém; chave inexistente mostra "Filme não encontrado" com link | CA-1 a CA-3 |
+    | Dados básicos | ano, lançamento, duração, status, gêneros e sinopse de 4 filmes iguais à API (com duração 0 e sem gênero) | CA-4, CA-5 |
+    | Faixa de fundo | aparece com imagem; não aparece sem imagem; some com a imagem bloqueada | CA-6 |
+    | Listas | 10 dos 88 diretores; "Mostrar todos (88)" e "Mostrar menos"; ordem alfabética igual à API; "Não informado" sem produtoras | CA-7 a CA-10 |
+    | Financeiro | valores de Rings em R$ e US$; só orçamento dá "Não informado"/"Não calculado"; prejuízo com sinal e destaque | CA-11 a CA-14 |
+    | Média | igual à do cartão do mesmo filme | CA-15, CA-16 |
+    | Avaliações | "Avaliações (13)"; 10 e depois 13 com "Mostrar mais", que some; ordem igual à API; estrelas, comentário e data; filme com exatamente 10 sem botão; filme sem avaliações; falha no "mostrar mais" mantém as 10 e "Tentar de novo" recupera | CA-17 a CA-22 |
+    | Navegação | "Voltar ao catálogo" e o voltar do navegador retornam a `?search=ring&page=2`; endereço direto volta para `/`; título da aba | CA-23 a CA-25 |
+    | Estados e layout | carregando (API com atraso); erro com "Tentar novamente"; 360, 768 e 1280 px sem rolagem horizontal | CA-26 a CA-28 |
+
+    Regressão da 001: `check_catalog.py` 34/34 e `check_catalog_extra.py`
+    8/8. Duas checagens de `check_catalog.py` precisaram de ajuste no script:
+    - a CA-9 ainda esperava "Página não encontrada" ao clicar no cartão, e
+      agora confere o título do filme aberto;
+    - a CA-4 lia a paginação antes de o React trocar a tela, e agora espera
+      o texto mudar. Depois do ajuste, foram 5 rodadas seguidas com 34/34.
+
+    Problema corrigido durante a fase 3: rolagem horizontal de 12 px em
+    768 px, causada pela tabela financeira em meia coluna.
+
+- [x] **T-16. Documentação** (constituição, seção 6)
   - `README.md`: decisões da 002 e status.
   - `CLAUDE.md`:
     - mapa com os arquivos novos (`utils/`, hooks e componentes);
@@ -175,7 +199,7 @@ ela passa. Os comandos de backend rodam em `backend/` e os de frontend em
       em UTC.
   - Verificação: os links e comandos citados existem.
 
-- [ ] **T-17. Definição de pronto** (constituição, seção 6)
+- [x] **T-17. Definição de pronto** (constituição, seção 6)
   - Backend: `pytest`, `ruff check .` e `ruff format --check .` passam.
   - Frontend: `bun run build` e `bun run lint` passam.
   - CA-1 a CA-28 conferidos contra os testes, a T-05 e a T-15.

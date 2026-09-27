@@ -1,13 +1,15 @@
 import { Route, Routes } from 'react-router-dom'
 
 import CatalogPage from './pages/CatalogPage'
+import MovieDetailPage from './pages/MovieDetailPage'
 import NotFoundPage from './pages/NotFoundPage'
 
 function App() {
   return (
     <Routes>
       <Route path="/" element={<CatalogPage />} />
-      {/* Qualquer outra rota, inclusive /filmes/:id até a feature 002 existir. */}
+      <Route path="/filmes/:skMovieId" element={<MovieDetailPage />} />
+      {/* Qualquer outro endereço. */}
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
   )

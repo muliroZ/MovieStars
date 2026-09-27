@@ -2,7 +2,7 @@
 
 | Campo       | Valor                                                 |
 |-------------|-------------------------------------------------------|
-| Status      | Aprovado                                              |
+| Status      | Concluído                                             |
 | Spec        | [`spec.md`](spec.md) (aprovada)                       |
 | Referências | `specs/constitution.md` (seções 4.1, 4.2, 4.4, 5, 6); plan da 001 (DEC-7) |
 

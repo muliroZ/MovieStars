@@ -137,7 +137,7 @@ implementação, com revisão ao final de cada etapa.
 |---------------------------|-----------------|
 | 000 — Carga de dados      | Concluída       |
 | 001 — Catálogo e busca    | Concluída       |
-| 002 — Detalhes e média    | Plan aprovado   |
+| 002 — Detalhes e média    | Concluída       |
 | 003 — Gerenciar filmes    | Não iniciada    |
 | 004 — Avaliações          | Não iniciada    |
 
@@ -197,3 +197,31 @@ Resumo; o texto completo está na seção 4 da
   Em telas estreitas, os botões mostram só os símbolos.
 - **Responsivo:** a partir de 360 px. O cabeçalho com a busca fica fixo no
   topo só em telas largas.
+
+### Detalhes do filme e média (feature 002)
+
+- **Página `/filmes/<chave>`:** pôster, título, ano, data, duração, status,
+  gêneros, sinopse, média em estrelas, equipe (Direção, Roteiro, Elenco),
+  produtoras, dados financeiros e avaliações. Chave inexistente mostra
+  "Filme não encontrado".
+- **API:** `GET /api/v1/movies/{sk_movie_id}` (detalhes) e
+  `GET /api/v1/movies/{sk_movie_id}/reviews` (avaliações, 10 por página).
+  As duas respondem `404` para filme inexistente.
+- **Média igual ao catálogo:** as duas telas usam o mesmo cálculo no
+  backend.
+- **Listas longas:** até 10 nomes, com "Mostrar todos (N)". Isso cobre
+  99,5% dos filmes sem botão; o maior caso tem 88 diretores.
+- **Dinheiro em real e dólar,** como vem nos dados. O lucro só aparece
+  quando orçamento e receita existem (nos dados, sem os dois ele vale
+  −orçamento ou 0, o que sugeriria prejuízos que não aconteceram).
+  Prejuízo aparece em vermelho e com a palavra "prejuízo".
+- **Avaliações:** das mais recentes para as mais antigas, com a data, 10 por
+  vez com "Mostrar mais avaliações". As importadas mostram todas a data da
+  carga, porque o CSV não tem data.
+- **Datas e fuso:** o banco grava `created_at` em UTC; a API envia com `Z` e
+  a interface mostra no horário local. A data de lançamento é formatada a
+  partir do texto, sem passar por `new Date`, para não voltar um dia no fuso
+  do Brasil.
+- **Voltar ao catálogo:** retorna à mesma página e busca de onde se saiu.
+- **Formatações compartilhadas** ficam em `frontend/src/utils/format.ts`
+  (pasta acrescentada à constituição).

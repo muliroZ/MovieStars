@@ -1,0 +1,76 @@
+.financial-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.financial-table th,
+.financial-table td {
+  padding: 0.55rem 0.6rem;
+  text-align: left;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.financial-table thead th {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.financial-table tbody th {
+  font-weight: 600;
+}
+
+.financial-table td {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.financial-table__missing {
+  color: var(--color-text-muted);
+}
+
+.financial-table__loss {
+  color: var(--color-danger);
+}
+
+.financial-table__tag {
+  margin-left: 0.4rem;
+  padding: 0.05rem 0.4rem;
+  font-size: 0.75rem;
+  border: 1px solid currentcolor;
+  border-radius: 999px;
+}
+
+/* Telas estreitas: cada métrica vira um bloco, com a moeda ao lado de cada valor. */
+@media (max-width: 479px) {
+  .financial-table thead {
+    display: none;
+  }
+
+  .financial-table,
+  .financial-table tbody,
+  .financial-table tr,
+  .financial-table th,
+  .financial-table td {
+    display: block;
+  }
+
+  .financial-table tr {
+    padding: 0.4rem 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .financial-table th,
+  .financial-table td {
+    padding: 0.15rem 0;
+    border-bottom: none;
+  }
+
+  .financial-table td::before {
+    display: inline-block;
+    min-width: 3.5rem;
+    color: var(--color-text-muted);
+    content: attr(data-label);
+  }
+}

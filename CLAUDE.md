@@ -80,11 +80,19 @@ bun run lint
   maiúsculas), usado na busca e na ordem do catálogo (feature 001).
 - `backend/tests/conftest.py`: fixtures `session` e `client` sobre um SQLite
   temporário; reutilize nos testes de novos endpoints.
+- `backend/tests/helpers.py`: `add_movie(...)` monta filmes de teste (gêneros,
+  pessoas, produtoras, métricas, avaliações com data) pelo ORM.
 - `backend/app/db/session.py`: engine e `get_db`.
 - `backend/migrations/versions/`: revisões Alembic.
 - `frontend/src/{api,types,pages,components,hooks}/`: ver constituição,
   seção 5.3. `api/client.ts` é o único lugar com `fetch`; cada componente
   tem seu `.css` ao lado; variáveis de cor em `src/index.css`.
+- `frontend/src/utils/format.ts`: `formatDate`, `formatDateTime`,
+  `formatDuration`, `formatMoney` (pt-BR). Componentes reutilizáveis:
+  `Poster` (imagem padrão), `StarRating`, `NameList` (10 nomes + "Mostrar
+  todos"), `FinancialTable`, `ReviewList`.
+- Rotas do frontend: `/` (catálogo) e `/filmes/:skMovieId` (detalhes). O
+  cartão passa `state.catalogSearch` para o "Voltar ao catálogo".
 - `specs/`: constituição e features.
 - `data/bases_atv_dev1/` e `data/bases_atv_dev_2/`: CSVs de carga inicial
   (versionados). O banco `backend/moviestars.db` ocupa ~550 MB
@@ -111,6 +119,14 @@ bun run lint
   sk_movie_id` (coberta pelo índice `ix_dim_movies_ordem_catalogo`).
 - **Títulos com aspas extras** (55) aparecem no início do catálogo: é uma
   pendência adiada pelo desenvolvedor. Não corrija sem ele pedir.
+- **Datas no frontend:** `data_lancamento` ("AAAA-MM-DD") é formatada
+  dividindo o texto (`formatDate`); `new Date("2017-02-01")` vira 31/01 no
+  fuso do Brasil. `created_at` é gravado em UTC sem fuso pelo SQLite; o
+  serviço o devolve com `Z` e o frontend usa `formatDateTime`.
+- **Conversão para estrelas:** use `_to_stars` do `service.py` para médias e
+  para notas individuais (mesmo arredondamento em todo lugar).
+- **Lucro:** o serviço devolve `lucro_*` como `null` quando falta orçamento
+  ou receita (spec 002, D-5); o banco não é alterado.
 
 ## Limites
 

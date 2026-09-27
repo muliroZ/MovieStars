@@ -2,7 +2,7 @@
 
 | Campo          | Valor                                                  |
 |----------------|--------------------------------------------------------|
-| Status         | Aprovada                                               |
+| Status         | Concluída                                              |
 | Depende de     | 001 (o cartão do catálogo leva a esta página)          |
 | Bloqueia       | 003 (editar/remover a partir dos detalhes), 004 (adicionar avaliação) |
 | Referências    | `specs/constitution.md` (seções 1, 4.1, 4.2, 4.3, 4.4, 5.3) |

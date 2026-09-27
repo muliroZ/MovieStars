@@ -12,7 +12,7 @@ interface LoadedReviews {
   pages: number
 }
 
-interface ReviewsResult {
+export interface ReviewsResult {
   status: 'loading' | 'error' | 'success'
   message: string | null
   items: Review[]
