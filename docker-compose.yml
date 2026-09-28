@@ -1,0 +1,30 @@
+services:
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: api
+    restart: always
+    environment:
+      DATABASE_URL: "sqlite+aiosqlite:////app/db/moviestars.db"
+      BACKEND_CORS_ORIGINS: '["http://localhost:8080"]'
+      ENVIRONMENT: docker
+    ports:
+      - "8000:8000"
+    volumes:
+      - db-data:/app/db
+      - ./data:/data:ro
+
+  web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: web
+    restart: always
+    depends_on:
+      - api
+    ports:
+      - 8080:80
+
+volumes:
+  db-data:

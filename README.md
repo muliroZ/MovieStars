@@ -13,6 +13,8 @@ cadastra, edita e remove filmes e adiciona avaliações (1 a 5 estrelas).
 - **Backend:** Python 3.11+, FastAPI, Pydantic v2, SQLAlchemy 2.0 assíncrono,
   Alembic, SQLite.
 - **Frontend:** Vite, React, TypeScript (modo `strict`), React Router.
+- **Docker (opcional):** Docker Compose sobe a API e o frontend (servido por
+  nginx) com um comando.
 
 Detalhes e justificativas: [`specs/constitution.md`](specs/constitution.md).
 
@@ -20,15 +22,81 @@ Detalhes e justificativas: [`specs/constitution.md`](specs/constitution.md).
 
 ```text
 .
-├── backend/     # API FastAPI, modelos, migrações Alembic e testes
-├── frontend/    # aplicação Vite + React + TypeScript
-├── data/        # CSVs de carga inicial do catálogo
-├── specs/       # constituição do projeto e specs de cada feature
-├── README.md    # este arquivo
+├── backend/            # API FastAPI, modelos, migrações Alembic e testes
+├── frontend/           # aplicação Vite + React + TypeScript
+├── data/               # CSVs de carga inicial do catálogo
+├── specs/              # constituição do projeto e specs de cada feature
+├── docker-compose.yml  # sobe a API e o frontend em containers
+├── README.md           # este arquivo
 └── README-BASE.md
 ```
 
 ## Como executar
+
+Há dois jeitos: tudo em containers, com o Docker Compose, ou cada parte
+direto na máquina (seções [Backend](#backend) e [Frontend](#frontend)).
+
+### Com Docker
+
+Requer Docker com o Compose (`docker compose version`). Na raiz do projeto:
+
+```bash
+docker compose up --build -d   # constrói as imagens e sobe tudo em segundo plano
+docker compose logs -f api     # acompanha a primeira subida (Ctrl+C sai dos logs)
+```
+
+| O quê                 | Endereço                        |
+|-----------------------|---------------------------------|
+| Aplicação             | http://localhost:8080           |
+| API                   | http://localhost:8000/api/v1    |
+| Documentação da API   | http://localhost:8000/docs      |
+
+Na **primeira subida**, a API aplica as migrações e carrega os CSVs de
+`data/` antes de responder (cerca de 35 s, ou mais numa máquina lenta). Ela
+está pronta quando os logs mostram `Carga concluída.` e `Uvicorn running on
+http://0.0.0.0:8000`. Nas subidas seguintes, a carga é pulada e só as
+migrações novas são aplicadas.
+
+Comandos do dia a dia:
+
+```bash
+docker compose ps                  # situação dos containers
+docker compose down                # para e remove os containers (o banco fica)
+docker compose up --build -d       # depois de um git pull: reconstrói e sobe
+docker compose down -v             # para e APAGA o banco do Docker (a próxima subida recarrega os CSVs)
+```
+
+Como funciona:
+
+- **Dois serviços:**
+  - `api` (Python 3.11): aplica as migrações, carrega os CSVs na primeira
+    vez e roda o `uvicorn` com um único worker, porque o cache de consultas é
+    por processo;
+  - `web`: gera o build do frontend com o Bun e o serve com o nginx.
+- **Banco separado do desenvolvimento local:** o banco do Docker fica no
+  volume `db-data` (`/app/db/moviestars.db` no container), não no
+  `backend/moviestars.db`. Filmes e avaliações criados numa instalação não
+  aparecem na outra. Um arquivo `.loaded` no volume marca que a carga já foi
+  feita.
+- **CSVs só para leitura:** a pasta `data/` é montada em `/data`.
+- **Endereço da API no frontend:** o build usa o padrão
+  `http://localhost:8000/api/v1`, porque é o navegador que chama a API, pela
+  porta publicada. Trocar esse endereço exige mudar o build.
+- **CORS:** a API aceita chamadas só de `http://localhost:8080`
+  (`BACKEND_CORS_ORIGINS` no `docker-compose.yml`). O frontend local do
+  `bun run dev` (porta 5173) não consegue usar a API do Docker sem incluir
+  essa origem ali.
+- **Rotas do frontend:** o nginx devolve o `index.html` para qualquer
+  caminho, então recarregar `/filmes/...` funciona.
+- **Portas:** 8000 e 8080 precisam estar livres. Pare a API e o frontend
+  locais antes de subir o Docker.
+
+Recarregar os dados do zero, com a stack no ar:
+
+```bash
+docker compose exec api python -m app.movies.load_data --data-dir /data --reset
+docker compose restart api   # esvazia o cache de consultas
+```
 
 ### Backend
 
@@ -357,3 +425,19 @@ Resumo; o texto completo está na seção 4 da
   terminou depois dela não guarda o seu resultado (contador de geração).
 - **Expiração de 5 minutos e limite de 256 respostas:** a expiração cobre as
   alterações feitas fora da API.
+
+### Docker
+
+- **Compose com dois serviços** (`api` e `web`), sem serviço de banco: o
+  SQLite é um arquivo, guardado num volume nomeado para sobreviver à
+  recriação dos containers.
+- **Migrações e carga na subida** (`backend/docker-entrypoint.sh`): as
+  migrações rodam a cada subida; a carga dos CSVs, só na primeira. Um clone
+  novo funciona sem nenhum passo manual.
+- **Frontend de produção:** build num estágio com o Bun e nginx servindo os
+  arquivos estáticos, em vez do servidor de desenvolvimento do Vite.
+- **Um único worker do `uvicorn`**, pelo cache de consultas (feature 101).
+- **`sqlalchemy[asyncio]` no `pyproject.toml`:** a partir do SQLAlchemy 2.1,
+  o `greenlet`, que o modo assíncrono exige, deixou de ser instalado
+  sozinho. A imagem instala as versões mais recentes das dependências
+  (SQLAlchemy 2.1), então o extra garante o `greenlet` no container.
