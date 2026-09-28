@@ -147,11 +147,11 @@ docker compose build
   `CatalogToolbar` (botão "Filtros", ordenação, "Inverter") e `FilterPanel`.
   No backend, `CatalogFilters`/`CatalogQuery` em `schemas.py` e
   `_filter_conditions`/`_order_by` em `service.py`.
-- Docker: `docker-compose.yml` (serviços `api` e `web`), `backend/Dockerfile`
+- Docker (feature 102): `docker-compose.yml` (serviços `api` e `web`), `backend/Dockerfile`
   com `backend/docker-entrypoint.sh` (migrações a cada subida, carga só na
   primeira, marcada por `.loaded` no volume) e `frontend/Dockerfile` com
   `frontend/nginx.conf` (build com Bun, nginx com fallback para `index.html`).
-- `.github/workflows/ci.yml`: pipeline de CI com os jobs `backend` (matriz
+- `.github/workflows/ci.yml` (feature 102): pipeline de CI com os jobs `backend` (matriz
   Python 3.11 a 3.14), `frontend` (Bun 1.4.0) e `docker` (só depois dos
   outros dois).
 - `specs/`: constituição e features.

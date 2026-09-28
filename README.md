@@ -240,8 +240,12 @@ implementação, com revisão ao final de cada etapa.
 | 004 — Avaliações          | Concluída       |
 | 100 — Filtros do catálogo | Concluída       |
 | 101 — Cache de consultas  | Concluída       |
+| 102 — Docker e CI         | Concluída       |
 
 ### Integração contínua (CI)
+
+Registrada, junto com o Docker, como a feature 102
+([`specs/features/102-docker-e-ci/`](specs/features/102-docker-e-ci/)).
 
 A pipeline do GitHub Actions ([`.github/workflows/ci.yml`](.github/workflows/ci.yml))
 roda a cada push na `main` e a cada pull request. Um push novo no mesmo
@@ -474,7 +478,7 @@ Resumo; o texto completo está na seção 4 da
 - **Expiração de 5 minutos e limite de 256 respostas:** a expiração cobre as
   alterações feitas fora da API.
 
-### Docker
+### Docker e CI (feature 102)
 
 - **Compose com dois serviços** (`api` e `web`), sem serviço de banco: o
   SQLite é um arquivo, guardado num volume nomeado para sobreviver à
@@ -489,3 +493,7 @@ Resumo; o texto completo está na seção 4 da
   o `greenlet`, que o modo assíncrono exige, deixou de ser instalado
   sozinho. A imagem instala as versões mais recentes das dependências
   (SQLAlchemy 2.1), então o extra garante o `greenlet` no container.
+- **CI no GitHub Actions com três jobs** (`backend`, `frontend` e `docker`,
+  este só depois dos outros dois), matriz de Python 3.11 a 3.14 e Bun fixo na
+  versão do desenvolvimento. Detalhes em
+  [Integração contínua (CI)](#integração-contínua-ci).
