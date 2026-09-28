@@ -27,6 +27,7 @@ Detalhes e justificativas: [`specs/constitution.md`](specs/constitution.md).
 ├── data/               # CSVs de carga inicial do catálogo
 ├── specs/              # constituição do projeto e specs de cada feature
 ├── docker-compose.yml  # sobe a API e o frontend em containers
+├── .github/workflows/  # pipeline de integração contínua (ci.yml)
 ├── README.md           # este arquivo
 └── README-BASE.md
 ```
@@ -239,6 +240,53 @@ implementação, com revisão ao final de cada etapa.
 | 004 — Avaliações          | Concluída       |
 | 100 — Filtros do catálogo | Concluída       |
 | 101 — Cache de consultas  | Concluída       |
+
+### Integração contínua (CI)
+
+A pipeline do GitHub Actions ([`.github/workflows/ci.yml`](.github/workflows/ci.yml))
+roda a cada push na `main` e a cada pull request. Um push novo no mesmo
+branch cancela a execução anterior, que ainda estiver rodando.
+
+| Job        | O que faz                                                        |
+|------------|------------------------------------------------------------------|
+| `backend`  | Em Python 3.11, 3.12, 3.13 e 3.14, em paralelo: instala as dependências, roda o lint (`ruff check`), confere a formatação (`ruff format --check`), roda os testes (`pytest`), aplica as migrações num banco vazio (`alembic upgrade head`) e confere que modelos e migrações estão em sincronia (`alembic check`) |
+| `frontend` | Com o Bun 1.4.0: instala as dependências exatamente como no `bun.lock` (`--frozen-lockfile`), roda o lint e o build (que também checa os tipos) |
+| `docker`   | Só depois de `backend` e `frontend` passarem: constrói as imagens do `docker-compose.yml` |
+
+Para conferir localmente antes do push, rode os mesmos comandos:
+
+```bash
+# backend/
+.venv/bin/ruff check .
+.venv/bin/ruff format --check .
+.venv/bin/pytest
+DATABASE_URL=sqlite+aiosqlite:///./ci.db .venv/bin/alembic upgrade head
+DATABASE_URL=sqlite+aiosqlite:///./ci.db .venv/bin/alembic check
+rm ci.db
+
+# frontend/
+bun install --frozen-lockfile
+bun run lint
+bun run build
+
+# raiz
+docker compose build
+```
+
+Como funciona:
+
+- **Os testes nunca usam o `moviestars.db`:** cada teste cria o seu banco
+  temporário (constituição, seção 6), e o CI não tem `.env`, então valem os
+  padrões do `Settings`. As migrações são conferidas num banco vazio à parte
+  (`ci.db`).
+- **`alembic check`** falha se um modelo mudar sem a migração
+  correspondente, a mesma verificação da definição de pronto das features.
+- **Versões:** a matriz cobre do Python 3.11 (o mínimo do projeto e a versão
+  da imagem Docker) ao 3.14. As versões vão entre aspas no YAML, porque sem
+  elas um futuro `3.10` seria lido como o número 3.1. O Bun fica fixo na
+  mesma versão usada no desenvolvimento.
+- **Permissões mínimas:** a pipeline só lê o repositório
+  (`contents: read`).
 
 ## Decisões
 

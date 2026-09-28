@@ -67,6 +67,41 @@ bun run build   # checa tipos e gera o build
 bun run lint
 ```
 
+### Docker (na raiz)
+
+```bash
+docker compose up --build -d    # constrói e sobe: web em http://localhost:8080, API em :8000
+docker compose logs -f api      # 1ª subida: migrações + carga dos CSVs antes do uvicorn
+docker compose ps               # situação dos containers
+docker compose down             # para os containers (o banco fica no volume db-data)
+docker compose down -v          # para e APAGA o banco do Docker (recarrega na próxima subida)
+docker compose exec api python -m app.movies.load_data --data-dir /data --reset  # recarga
+docker compose restart api      # esvazia o cache de consultas
+```
+
+O banco do Docker (volume `db-data`) é separado do `backend/moviestars.db`;
+a API do Docker só aceita CORS de `http://localhost:8080`; as portas 8000 e
+8080 precisam estar livres (pare os servidores locais antes).
+
+### CI (antes de dar push)
+
+A pipeline (`.github/workflows/ci.yml`) roda em push na `main` e em pull
+requests. Para ela passar, estes comandos precisam passar localmente:
+
+```bash
+# backend/
+.venv/bin/ruff check .
+.venv/bin/ruff format --check .
+.venv/bin/pytest
+DATABASE_URL=sqlite+aiosqlite:///./ci.db .venv/bin/alembic upgrade head
+DATABASE_URL=sqlite+aiosqlite:///./ci.db .venv/bin/alembic check
+rm ci.db
+# frontend/
+bun install --frozen-lockfile && bun run lint && bun run build
+# raiz
+docker compose build
+```
+
 ## Mapa do código
 
 - `backend/app/movies/models.py`: modelos ORM (esquema estrela). Não altere
@@ -112,6 +147,13 @@ bun run lint
   `CatalogToolbar` (botão "Filtros", ordenação, "Inverter") e `FilterPanel`.
   No backend, `CatalogFilters`/`CatalogQuery` em `schemas.py` e
   `_filter_conditions`/`_order_by` em `service.py`.
+- Docker: `docker-compose.yml` (serviços `api` e `web`), `backend/Dockerfile`
+  com `backend/docker-entrypoint.sh` (migrações a cada subida, carga só na
+  primeira, marcada por `.loaded` no volume) e `frontend/Dockerfile` com
+  `frontend/nginx.conf` (build com Bun, nginx com fallback para `index.html`).
+- `.github/workflows/ci.yml`: pipeline de CI com os jobs `backend` (matriz
+  Python 3.11 a 3.14), `frontend` (Bun 1.4.0) e `docker` (só depois dos
+  outros dois).
 - `specs/`: constituição e features.
 - `data/bases_atv_dev1/` e `data/bases_atv_dev_2/`: CSVs de carga inicial
   (versionados). O banco `backend/moviestars.db` ocupa ~550 MB
@@ -191,6 +233,10 @@ bun run lint
   `session` entre duas consultas da API precisam chamar `query_cache.clear()`
   (o `conftest.py` só limpa no início de cada teste). A API roda com um único
   worker, porque o cache é por processo.
+- **CI em Python 3.11 a 3.14:** o código precisa rodar no 3.11 (o mínimo do
+  `pyproject.toml` e a versão da imagem Docker). Não use sintaxe mais nova,
+  como os genéricos `def f[T](...)` e `class C[T]` do 3.12; use `TypeVar`.
+  Mudou um modelo? Crie a migração, ou o `alembic check` do CI falha.
 
 ## Limites
 
